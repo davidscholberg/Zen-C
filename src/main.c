@@ -17,7 +17,8 @@ void print_search_paths()
     printf("Search paths:\n");
     printf("  ./\n");
     printf("  ./std/\n");
-    printf("  /usr/local/lib/zen/\n");
+    printf("  /usr/local/share/zenc\n");
+    printf("  /usr/share/zenc\n");
 }
 
 void print_usage()
