@@ -189,7 +189,7 @@ if x > 10 {
 }
 
 // Ternary
-var y = if x > 10 ? 1 : 0;
+var y = x > 10 ? 1 : 0;
 ```
 
 #### Pattern Matching
