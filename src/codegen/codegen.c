@@ -981,7 +981,7 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
         else
         {
             fprintf(out,
-                    "; if (!_try.is_ok) return %s_Err(_try.err); "
+                    "; if (!_try.is_ok) return %s__Err(_try.err); "
                     "_try.val; })",
                     search_name);
         }

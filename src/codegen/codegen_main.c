@@ -336,23 +336,54 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
         emit_enum_protos(sorted, out);
         emit_trait_defs(kids, out);
 
+        // First pass: emit ONLY preprocessor directives before struct defs
+        // so that macros like `panic` are available in function bodies
+        ASTNode *raw_iter = kids;
+        while (raw_iter)
+        {
+            if (raw_iter->type == NODE_RAW_STMT && raw_iter->raw_stmt.content)
+            {
+                const char *content = raw_iter->raw_stmt.content;
+                // Skip leading whitespace
+                while (*content == ' ' || *content == '\t' || *content == '\n')
+                {
+                    content++;
+                }
+                // Emit only if it's a preprocessor directive
+                if (*content == '#')
+                {
+                    fprintf(out, "%s\n", raw_iter->raw_stmt.content);
+                }
+            }
+            raw_iter = raw_iter->next;
+        }
+
         if (sorted)
         {
             emit_struct_defs(ctx, sorted, out);
         }
 
-        // Emit type aliases after struct defs (so aliased generic types exist)
-        emit_type_aliases(kids, out);
-
-        ASTNode *raw_iter = kids;
+        // Second pass: emit non-preprocessor raw statements after struct defs
+        raw_iter = kids;
         while (raw_iter)
         {
-            if (raw_iter->type == NODE_RAW_STMT)
+            if (raw_iter->type == NODE_RAW_STMT && raw_iter->raw_stmt.content)
             {
-                fprintf(out, "%s\n", raw_iter->raw_stmt.content);
+                const char *content = raw_iter->raw_stmt.content;
+                while (*content == ' ' || *content == '\t' || *content == '\n')
+                {
+                    content++;
+                }
+                if (*content != '#')
+                {
+                    fprintf(out, "%s\n", raw_iter->raw_stmt.content);
+                }
             }
             raw_iter = raw_iter->next;
         }
+
+        // Emit type aliases after struct defs (so aliased generic types exist)
+        emit_type_aliases(kids, out);
 
         ASTNode *merged_globals = NULL; // Head
 
