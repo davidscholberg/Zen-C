@@ -591,8 +591,8 @@ static ASTNode *generate_derive_impls(ParserContext *ctx, ASTNode *strct, char *
                         else if (fdef && fdef->type == NODE_STRUCT)
                         {
                             // Struct field: use _eq function, pass addresses
-                            // self.field is L-value, other.field is L-value (auto-deref from pointer)
-                            // We need addresses of them: &self.field, &other.field
+                            // self.field is L-value, other.field is L-value (auto-deref from
+                            // pointer) We need addresses of them: &self.field, &other.field
                             sprintf(cmp, "%s__eq(&self.%s, &other.%s)", ft, fn, fn);
                         }
                         else

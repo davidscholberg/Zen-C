@@ -303,6 +303,7 @@ struct ASTNode
             char *pattern;
             char *binding_name;
             int is_destructuring;
+            int is_ref; // New: Supports 'ref' binding (Some(ref x))
             ASTNode *guard;
             ASTNode *body;
             int is_default;

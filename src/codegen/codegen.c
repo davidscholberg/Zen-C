@@ -246,38 +246,89 @@ static void codegen_match_internal(ParserContext *ctx, ASTNode *node, FILE *out,
             {
                 if (strstr(g_config.cc, "tcc"))
                 {
-                    fprintf(out, "__typeof__(_m_%d.val) %s = _m_%d.val; ", id,
-                            c->match_case.binding_name, id);
-                }
-                else
-                {
-                    fprintf(out, "ZC_AUTO %s = _m_%d.val; ", c->match_case.binding_name, id);
-                }
-            }
-            if (is_result)
-            {
-                if (strcmp(c->match_case.pattern, "Ok") == 0)
-                {
-                    if (strstr(g_config.cc, "tcc"))
+                    if (c->match_case.is_ref)
+                    {
+                        fprintf(out, "__typeof__(&_m_%d.val) %s = &_m_%d.val; ", id,
+                                c->match_case.binding_name, id);
+                    }
+                    else
                     {
                         fprintf(out, "__typeof__(_m_%d.val) %s = _m_%d.val; ", id,
                                 c->match_case.binding_name, id);
+                    }
+                }
+                else
+                {
+                    if (c->match_case.is_ref)
+                    {
+                        fprintf(out, "ZC_AUTO %s = &_m_%d.val; ", c->match_case.binding_name, id);
                     }
                     else
                     {
                         fprintf(out, "ZC_AUTO %s = _m_%d.val; ", c->match_case.binding_name, id);
                     }
                 }
+            }
+            else if (is_result) // FIX: Changed 'if' to 'else if' to match original logic structure
+                                // if needed, but original code had implicit fallthrough checks? No,
+                                // checks match pattern.
+            {
+                if (strcmp(c->match_case.pattern, "Ok") == 0)
+                {
+                    if (strstr(g_config.cc, "tcc"))
+                    {
+                        if (c->match_case.is_ref)
+                        {
+                            fprintf(out, "__typeof__(&_m_%d.val) %s = &_m_%d.val; ", id,
+                                    c->match_case.binding_name, id);
+                        }
+                        else
+                        {
+                            fprintf(out, "__typeof__(_m_%d.val) %s = _m_%d.val; ", id,
+                                    c->match_case.binding_name, id);
+                        }
+                    }
+                    else
+                    {
+                        if (c->match_case.is_ref)
+                        {
+                            fprintf(out, "ZC_AUTO %s = &_m_%d.val; ", c->match_case.binding_name,
+                                    id);
+                        }
+                        else
+                        {
+                            fprintf(out, "ZC_AUTO %s = _m_%d.val; ", c->match_case.binding_name,
+                                    id);
+                        }
+                    }
+                }
                 else
                 {
                     if (strstr(g_config.cc, "tcc"))
                     {
-                        fprintf(out, "__typeof__(_m_%d.err) %s = _m_%d.err; ", id,
-                                c->match_case.binding_name, id);
+                        if (c->match_case.is_ref)
+                        {
+                            fprintf(out, "__typeof__(&_m_%d.err) %s = &_m_%d.err; ", id,
+                                    c->match_case.binding_name, id);
+                        }
+                        else
+                        {
+                            fprintf(out, "__typeof__(_m_%d.err) %s = _m_%d.err; ", id,
+                                    c->match_case.binding_name, id);
+                        }
                     }
                     else
                     {
-                        fprintf(out, "ZC_AUTO %s = _m_%d.err; ", c->match_case.binding_name, id);
+                        if (c->match_case.is_ref)
+                        {
+                            fprintf(out, "ZC_AUTO %s = &_m_%d.err; ", c->match_case.binding_name,
+                                    id);
+                        }
+                        else
+                        {
+                            fprintf(out, "ZC_AUTO %s = _m_%d.err; ", c->match_case.binding_name,
+                                    id);
+                        }
                     }
                 }
             }
@@ -292,7 +343,18 @@ static void codegen_match_internal(ParserContext *ctx, ASTNode *node, FILE *out,
                 {
                     f = c->match_case.pattern;
                 }
-                fprintf(out, "ZC_AUTO %s = _m_%d.data.%s; ", c->match_case.binding_name, id, f);
+                // Generic struct destructuring (e.g. MyStruct_Variant)
+                // Assuming data union or accessible field.
+                // Original: _m_%d.data.%s
+                if (c->match_case.is_ref)
+                {
+                    fprintf(out, "ZC_AUTO %s = &_m_%d.data.%s; ", c->match_case.binding_name, id,
+                            f);
+                }
+                else
+                {
+                    fprintf(out, "ZC_AUTO %s = _m_%d.data.%s; ", c->match_case.binding_name, id, f);
+                }
             }
         }
 

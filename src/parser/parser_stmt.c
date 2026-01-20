@@ -217,11 +217,11 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
             break;
         }
 
-        // --- 1. Parse Patterns (with OR and range support) ---
+        // Parse Patterns (with OR and range support)
         // Patterns can be:
         //   - Single value: 1
-        //   - OR patterns: 1 || 2 or 1 or 2
-        //   - Range patterns: 1..5 or 1..=5
+        //   - OR patterns: 1 || 2 or 1 or 2 or 1, 2
+        //   - Range patterns: 1..5 or 1..=5 or 1..<5
         char patterns_buf[1024];
         patterns_buf[0] = 0;
         int pattern_count = 0;
@@ -292,11 +292,22 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
         char *binding = NULL;
         int is_destructure = 0;
 
-        // --- 2. Handle Destructuring: Ok(v) ---
+        int is_ref = 0;
+
+        // Handle Destructuring: Ok(v)
         // (Only allowed if we matched a single pattern, e.g. "Result::Ok(val)")
         if (!is_default && pattern_count == 1 && lexer_peek(l).type == TOK_LPAREN)
         {
             lexer_next(l); // eat (
+
+            // Check for 'ref' keyword
+            if (lexer_peek(l).type == TOK_IDENT && lexer_peek(l).len == 3 &&
+                strncmp(lexer_peek(l).start, "ref", 3) == 0)
+            {
+                lexer_next(l); // eat 'ref'
+                is_ref = 1;
+            }
+
             Token b = lexer_next(l);
             if (b.type != TOK_IDENT)
             {
@@ -348,6 +359,7 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
         c->match_case.pattern = pattern;
         c->match_case.binding_name = binding;
         c->match_case.is_destructuring = is_destructure;
+        c->match_case.is_ref = is_ref; // Store is_ref flag
         c->match_case.guard = guard;
         c->match_case.body = body;
         c->match_case.is_default = is_default;

@@ -273,6 +273,21 @@ match shape {
     Rect(w, h) => print(f"Area: {w*h}"),
     Point => print("Point")
 }
+
+#### Reference Binding
+To inspect a value without taking ownership (moving it), use the `ref` keyword in the pattern. This is essential for types that implement Move Semantics (e.g. `Option`, `Result`, non-Copy structs).
+
+```zc
+var opt = Some(NonCopyVal{...});
+match opt {
+    Some(ref x) => {
+        // 'x' is a pointer to the value inside 'opt'
+        // 'opt' is NOT moved/consumed here
+        print(x.field); 
+    },
+    None => {}
+}
+```
 ```
 
 #### Loops
@@ -418,7 +433,10 @@ autofree var types = malloc(1024);
 Zen C prevents double-free errors by enforcing **Move Semantics** for non-trivial types (structs) by default.
 
 - **Move by Default**: Assigning a struct variable transfers ownership. The original variable becomes invalid.
-- **Copy Trait**: Implement the `Copy` trait to opt-out of move semantics for simple types (e.g. `Point`).
+- **Management Strategies**:
+    - **`Copy` Trait**: Opt-out of move semantics for simple types.
+    - **`ref` Binding**: Use `match val { Some(ref x) => ... }` to inspect without moving.
+    - **Smart Derives**: `@derive(Eq)` uses references for comparison to avoid moves.
 
 ```zc
 struct Mover { val: int; }

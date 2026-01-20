@@ -1,0 +1,17 @@
+
+enum MyOption<T> {
+    Some(T),
+    None
+}
+
+test "match_ref_int" {
+    var r = MyOption<int>::Some(42);
+    match r {
+        MyOption::Some(ref i) => {
+            // i is int*
+            assert(*i == 42, "int ref check failed");
+            *i = 100;
+        },
+        MyOption::None => assert(false, "fail")
+    }
+}
