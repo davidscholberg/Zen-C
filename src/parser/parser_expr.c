@@ -1542,15 +1542,46 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
             {
                 Lexer lookahead = *l;
                 lexer_next(&lookahead);
-                parse_type(ctx, &lookahead);
-                if (lexer_peek(&lookahead).type == TOK_RANGLE)
+
+                int valid_generic = 0;
+                while (1)
                 {
-                    lexer_next(l);
-                    Type *formal_type = parse_type_formal(ctx, l);
-                    char *concrete_type = type_to_string(formal_type); // mangled for naming
-                    char *unmangled_type =
-                        type_to_c_string(formal_type); // C-compatible for substitution
-                    lexer_next(l);
+                    parse_type(ctx, &lookahead);
+                    if (lexer_peek(&lookahead).type == TOK_COMMA)
+                    {
+                        lexer_next(&lookahead);
+                        continue;
+                    }
+                    if (lexer_peek(&lookahead).type == TOK_RANGLE)
+                    {
+                        valid_generic = 1;
+                    }
+                    break;
+                }
+
+                if (valid_generic)
+                {
+                    lexer_next(l); // eat <
+
+                    char **concrete_types = xmalloc(sizeof(char *) * 8);
+                    char **unmangled_types = xmalloc(sizeof(char *) * 8);
+                    int arg_count = 0;
+
+                    while (1)
+                    {
+                        Type *formal_type = parse_type_formal(ctx, l);
+                        concrete_types[arg_count] = type_to_string(formal_type);
+                        unmangled_types[arg_count] = type_to_c_string(formal_type);
+                        arg_count++;
+
+                        if (lexer_peek(l).type == TOK_COMMA)
+                        {
+                            lexer_next(l);
+                            continue;
+                        }
+                        break;
+                    }
+                    lexer_next(l); // eat >
 
                     int is_struct = 0;
                     GenericTemplate *st = ctx->templates;
@@ -1570,21 +1601,67 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
 
                     if (is_struct)
                     {
-                        instantiate_generic(ctx, acc, concrete_type, unmangled_type, t);
+                        char mangled[256];
+                        strcpy(mangled, acc);
+                        int is_generic_dep = 0;
+                        for (int i = 0; i < arg_count; ++i)
+                        {
+                            for (int k = 0; k < ctx->known_generics_count; ++k)
+                            {
+                                if (strcmp(concrete_types[i], ctx->known_generics[k]) == 0)
+                                {
+                                    is_generic_dep = 1;
+                                    break;
+                                }
+                            }
+                            char *clean = sanitize_mangled_name(concrete_types[i]);
+                            strcat(mangled, "_");
+                            strcat(mangled, clean);
+                            free(clean);
+                        }
 
-                        char *clean_type = sanitize_mangled_name(concrete_type);
-
-                        char *m = xmalloc(strlen(acc) + strlen(clean_type) + 2);
-                        sprintf(m, "%s_%s", acc, clean_type);
-                        free(clean_type);
-
-                        free(acc);
-                        acc = m;
+                        if (arg_count == 1)
+                        {
+                            // Single-arg: only instantiate if not generic dependent
+                            if (!is_generic_dep)
+                            {
+                                instantiate_generic(ctx, acc, concrete_types[0], unmangled_types[0],
+                                                    t);
+                            }
+                            free(acc);
+                            acc = xstrdup(mangled);
+                        }
+                        else
+                        {
+                            // Multi-arg struct instantiation
+                            if (!is_generic_dep)
+                            {
+                                instantiate_generic_multi(ctx, acc, concrete_types, arg_count, t);
+                            }
+                            free(acc);
+                            acc = xstrdup(mangled);
+                        }
                     }
                     else
                     {
+                        // Function Template
+                        // Join types with comma
+                        char full_concrete[1024] = {0};
+                        char full_unmangled[1024] = {0};
+
+                        for (int i = 0; i < arg_count; ++i)
+                        {
+                            if (i > 0)
+                            {
+                                strcat(full_concrete, ",");
+                                strcat(full_unmangled, ",");
+                            }
+                            strcat(full_concrete, concrete_types[i]);
+                            strcat(full_unmangled, unmangled_types[i]);
+                        }
+
                         char *m =
-                            instantiate_function_template(ctx, acc, concrete_type, unmangled_type);
+                            instantiate_function_template(ctx, acc, full_concrete, full_unmangled);
                         if (m)
                         {
                             free(acc);
@@ -1595,6 +1672,16 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
                             zpanic_at(t, "Unknown generic %s", acc);
                         }
                     }
+
+                    // Cleanup
+                    for (int i = 0; i < arg_count; ++i)
+                    {
+                        free(concrete_types[i]);
+                        free(unmangled_types[i]);
+                    }
+                    free(concrete_types);
+                    free(unmangled_types);
+
                     changed = 1;
                 }
             }

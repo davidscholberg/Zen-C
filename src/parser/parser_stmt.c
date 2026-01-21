@@ -51,13 +51,59 @@ ASTNode *parse_function(ParserContext *ctx, Lexer *l, int is_async)
     char *gen_param = NULL;
     if (lexer_peek(l).type == TOK_LANGLE)
     {
-        lexer_next(l);
-        Token gt = lexer_next(l);
-        gen_param = token_strdup(gt);
+        lexer_next(l); // eat <
+
+        char buf[1024];
+        buf[0] = 0;
+
+        while (1)
+        {
+            Token gt = lexer_next(l);
+            if (gt.type != TOK_IDENT)
+            {
+                zpanic_at(gt, "Expected generic parameter name");
+            }
+            char *s = token_strdup(gt);
+
+            if (strlen(buf) + strlen(s) + 2 >= sizeof(buf))
+            {
+                zpanic_at(gt, "Too many generic parameters");
+            }
+
+            if (buf[0])
+            {
+                strcat(buf, ",");
+            }
+            strcat(buf, s);
+            free(s);
+
+            if (lexer_peek(l).type == TOK_COMMA)
+            {
+                lexer_next(l);
+                continue;
+            }
+            break;
+        }
+
         if (lexer_next(l).type != TOK_RANGLE)
         {
             zpanic_at(lexer_peek(l), "Expected >");
         }
+        gen_param = xstrdup(buf);
+    }
+
+    // Register generic parameters so type parsing recognizes them
+    int saved_generic_count = ctx->known_generics_count;
+    if (gen_param)
+    {
+        char *tmp = xstrdup(gen_param);
+        char *tok = strtok(tmp, ",");
+        while (tok)
+        {
+            register_generic(ctx, tok);
+            tok = strtok(NULL, ",");
+        }
+        free(tmp);
     }
 
     enter_scope(ctx);
@@ -138,6 +184,10 @@ ASTNode *parse_function(ParserContext *ctx, Lexer *l, int is_async)
     }
 
     exit_scope(ctx);
+
+    // Restore generic count to unregister function-scoped generics
+    ctx->known_generics_count = saved_generic_count;
+
     curr_func_ret = NULL;
 
     ASTNode *node = ast_create(NODE_FUNCTION);

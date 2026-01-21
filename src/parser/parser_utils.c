@@ -858,6 +858,57 @@ char *replace_in_string(const char *src, const char *old_w, const char *new_w)
         return src ? xstrdup(src) : NULL;
     }
 
+    // Check for multiple parameters (comma separated)
+    if (strchr(old_w, ','))
+    {
+        char *running_src = xstrdup(src);
+
+        char *p_ptr = (char *)old_w;
+        char *c_ptr = (char *)new_w;
+
+        while (*p_ptr && *c_ptr)
+        {
+            char *p_end = strchr(p_ptr, ',');
+            int p_len = p_end ? (p_end - p_ptr) : strlen(p_ptr);
+
+            char *c_end = strchr(c_ptr, ',');
+            int c_len = c_end ? (c_end - c_ptr) : strlen(c_ptr);
+
+            char *curr_p = xmalloc(p_len + 1);
+            strncpy(curr_p, p_ptr, p_len);
+            curr_p[p_len] = 0;
+
+            char *curr_c = xmalloc(c_len + 1);
+            strncpy(curr_c, c_ptr, c_len);
+            curr_c[c_len] = 0;
+
+            char *next_src = replace_in_string(running_src, curr_p, curr_c);
+            free(running_src);
+            running_src = next_src;
+
+            free(curr_p);
+            free(curr_c);
+
+            if (p_end)
+            {
+                p_ptr = p_end + 1;
+            }
+            else
+            {
+                break;
+            }
+            if (c_end)
+            {
+                c_ptr = c_end + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return running_src;
+    }
+
     char *result;
     int i, cnt = 0;
     int newWlen = strlen(new_w);
@@ -940,8 +991,50 @@ char *replace_type_str(const char *src, const char *param, const char *concrete,
         return NULL;
     }
 
-    if (strcmp(src, param) == 0)
+    // Handle multi-param match
+    if (param && concrete && strchr(param, ','))
     {
+        char *p_ptr = (char *)param;
+        char *c_ptr = (char *)concrete;
+
+        while (*p_ptr && *c_ptr)
+        {
+            char *p_end = strchr(p_ptr, ',');
+            int p_len = p_end ? (p_end - p_ptr) : strlen(p_ptr);
+
+            char *c_end = strchr(c_ptr, ',');
+            int c_len = c_end ? (c_end - c_ptr) : strlen(c_ptr);
+
+            if (strlen(src) == p_len && strncmp(src, p_ptr, p_len) == 0)
+            {
+                char *ret = xmalloc(c_len + 1);
+                strncpy(ret, c_ptr, c_len);
+                ret[c_len] = 0;
+                return ret;
+            }
+
+            if (p_end)
+            {
+                p_ptr = p_end + 1;
+            }
+            else
+            {
+                break;
+            }
+            if (c_end)
+            {
+                c_ptr = c_end + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    if (param && strcmp(src, param) == 0)
+    {
+
         return xstrdup(concrete);
     }
 
@@ -964,21 +1057,46 @@ char *replace_type_str(const char *src, const char *param, const char *concrete,
 
     if (param && concrete && src)
     {
-        char suffix[256];
-        sprintf(suffix, "_%s", param);
-        size_t slen = strlen(src);
-        size_t plen = strlen(suffix);
-        if (slen > plen && strcmp(src + slen - plen, suffix) == 0)
+        // Construct mangled suffix from param ("F,S" -> "_F_S")
+        char p_suffix[1024];
+        p_suffix[0] = 0;
+
+        char *p_temp = xstrdup(param);
+        char *tok = strtok(p_temp, ",");
+        while (tok)
         {
-            // Ends with _T -> Replace suffix with _int (sanitize for pointers like
-            // JsonValue*)
-            char *clean_concrete = sanitize_mangled_name(concrete);
-            char *ret = xmalloc(slen - plen + strlen(clean_concrete) + 2);
+            strcat(p_suffix, "_");
+            strcat(p_suffix, tok);
+            tok = strtok(NULL, ",");
+        }
+        free(p_temp);
+
+        size_t slen = strlen(src);
+        size_t plen = strlen(p_suffix);
+
+        if (slen >= plen && strcmp(src + slen - plen, p_suffix) == 0)
+        {
+            // Construct replacement suffix from concrete ("int,float" -> "_int_float")
+            char c_suffix[1024];
+            c_suffix[0] = 0;
+
+            char *c_temp = xstrdup(concrete);
+            tok = strtok(c_temp, ",");
+            while (tok)
+            {
+                strcat(c_suffix, "_");
+                char *clean = sanitize_mangled_name(tok);
+                strcat(c_suffix, clean);
+                free(clean);
+                tok = strtok(NULL, ",");
+            }
+            free(c_temp);
+
+            // Perform replacement
+            char *ret = xmalloc(slen - plen + strlen(c_suffix) + 1);
             strncpy(ret, src, slen - plen);
             ret[slen - plen] = 0;
-            strcat(ret, "_");
-            strcat(ret, clean_concrete);
-            free(clean_concrete);
+            strcat(ret, c_suffix);
             return ret;
         }
     }
@@ -1025,6 +1143,111 @@ char *replace_type_str(const char *src, const char *param, const char *concrete,
 ASTNode *copy_ast_replacing(ASTNode *n, const char *p, const char *c, const char *os,
                             const char *ns);
 
+// Helper to create type from string (primitives or struct)
+Type *type_from_string_helper(const char *c)
+{
+    if (strcmp(c, "int") == 0)
+    {
+        return type_new(TYPE_INT);
+    }
+    if (strcmp(c, "float") == 0)
+    {
+        return type_new(TYPE_FLOAT);
+    }
+    if (strcmp(c, "void") == 0)
+    {
+        return type_new(TYPE_VOID);
+    }
+    if (strcmp(c, "string") == 0)
+    {
+        return type_new(TYPE_STRING);
+    }
+    if (strcmp(c, "bool") == 0)
+    {
+        return type_new(TYPE_BOOL);
+    }
+    if (strcmp(c, "char") == 0)
+    {
+        return type_new(TYPE_CHAR);
+    }
+    if (strcmp(c, "I8") == 0 || strcmp(c, "i8") == 0)
+    {
+        return type_new(TYPE_I8);
+    }
+    if (strcmp(c, "U8") == 0 || strcmp(c, "u8") == 0)
+    {
+        return type_new(TYPE_U8);
+    }
+    if (strcmp(c, "I16") == 0 || strcmp(c, "i16") == 0)
+    {
+        return type_new(TYPE_I16);
+    }
+    if (strcmp(c, "U16") == 0 || strcmp(c, "u16") == 0)
+    {
+        return type_new(TYPE_U16);
+    }
+    if (strcmp(c, "I32") == 0 || strcmp(c, "i32") == 0 || strcmp(c, "int32_t") == 0)
+    {
+        return type_new(TYPE_I32);
+    }
+    if (strcmp(c, "U32") == 0 || strcmp(c, "u32") == 0 || strcmp(c, "uint32_t") == 0)
+    {
+        return type_new(TYPE_U32);
+    }
+    if (strcmp(c, "I64") == 0 || strcmp(c, "i64") == 0 || strcmp(c, "int64_t") == 0)
+    {
+        return type_new(TYPE_I64);
+    }
+    if (strcmp(c, "U64") == 0 || strcmp(c, "u64") == 0 || strcmp(c, "uint64_t") == 0)
+    {
+        return type_new(TYPE_U64);
+    }
+    if (strcmp(c, "float") == 0 || strcmp(c, "f32") == 0)
+    {
+        return type_new(TYPE_F32);
+    }
+    if (strcmp(c, "double") == 0 || strcmp(c, "f64") == 0)
+    {
+        return type_new(TYPE_F64);
+    }
+    if (strcmp(c, "I128") == 0 || strcmp(c, "i128") == 0)
+    {
+        return type_new(TYPE_I128);
+    }
+    if (strcmp(c, "U128") == 0 || strcmp(c, "u128") == 0)
+    {
+        return type_new(TYPE_U128);
+    }
+    if (strcmp(c, "rune") == 0)
+    {
+        return type_new(TYPE_RUNE);
+    }
+    if (strcmp(c, "uint") == 0)
+    {
+        return type_new(TYPE_UINT);
+    }
+    if (strcmp(c, "double") == 0)
+    {
+        return type_new(TYPE_F64);
+    }
+    if (strcmp(c, "byte") == 0)
+    {
+        return type_new(TYPE_BYTE);
+    }
+    if (strcmp(c, "usize") == 0)
+    {
+        return type_new(TYPE_USIZE);
+    }
+    if (strcmp(c, "isize") == 0)
+    {
+        return type_new(TYPE_ISIZE);
+    }
+
+    Type *n = type_new(TYPE_STRUCT);
+    n->name = sanitize_mangled_name(c);
+    return n;
+}
+
 Type *replace_type_formal(Type *t, const char *p, const char *c, const char *os, const char *ns)
 {
     if (!t)
@@ -1032,155 +1255,54 @@ Type *replace_type_formal(Type *t, const char *p, const char *c, const char *os,
         return NULL;
     }
 
-    if ((t->kind == TYPE_STRUCT || t->kind == TYPE_GENERIC) && t->name && strcmp(t->name, p) == 0)
+    // Exact Match Logic (with multi-param splitting)
+    if ((t->kind == TYPE_STRUCT || t->kind == TYPE_GENERIC) && t->name)
     {
-        if (strcmp(c, "int") == 0)
-        {
-            return type_new(TYPE_INT);
-        }
-        if (strcmp(c, "float") == 0)
-        {
-            return type_new(TYPE_FLOAT);
-        }
-        if (strcmp(c, "void") == 0)
-        {
-            return type_new(TYPE_VOID);
-        }
-        if (strcmp(c, "string") == 0)
-        {
-            return type_new(TYPE_STRING);
-        }
-        if (strcmp(c, "bool") == 0)
-        {
-            return type_new(TYPE_BOOL);
-        }
-        if (strcmp(c, "char") == 0)
-        {
-            return type_new(TYPE_CHAR);
-        }
 
-        if (strcmp(c, "I8") == 0)
+        if (p && c && strchr(p, ','))
         {
-            return type_new(TYPE_I8);
-        }
-        if (strcmp(c, "U8") == 0)
-        {
-            return type_new(TYPE_U8);
-        }
-        if (strcmp(c, "I16") == 0)
-        {
-            return type_new(TYPE_I16);
-        }
-        if (strcmp(c, "U16") == 0)
-        {
-            return type_new(TYPE_U16);
-        }
-        if (strcmp(c, "I32") == 0)
-        {
-            return type_new(TYPE_I32);
-        }
-        if (strcmp(c, "U32") == 0)
-        {
-            return type_new(TYPE_U32);
-        }
-        if (strcmp(c, "I64") == 0)
-        {
-            return type_new(TYPE_I64);
-        }
-        if (strcmp(c, "U64") == 0)
-        {
-            return type_new(TYPE_U64);
-        }
-        if (strcmp(c, "F32") == 0)
-        {
-            return type_new(TYPE_F32);
-        }
-        if (strcmp(c, "f32") == 0)
-        {
-            return type_new(TYPE_F32);
-        }
-        if (strcmp(c, "F64") == 0)
-        {
-            return type_new(TYPE_F64);
-        }
-        if (strcmp(c, "f64") == 0)
-        {
-            return type_new(TYPE_F64);
-        }
+            char *p_ptr = (char *)p;
+            char *c_ptr = (char *)c;
+            while (*p_ptr && *c_ptr)
+            {
+                char *p_end = strchr(p_ptr, ',');
+                int p_len = p_end ? (p_end - p_ptr) : strlen(p_ptr);
+                char *c_end = strchr(c_ptr, ',');
+                int c_len = c_end ? (c_end - c_ptr) : strlen(c_ptr);
 
-        if (strcmp(c, "usize") == 0)
-        {
-            return type_new(TYPE_USIZE);
-        }
-        if (strcmp(c, "isize") == 0)
-        {
-            return type_new(TYPE_ISIZE);
-        }
-        if (strcmp(c, "byte") == 0)
-        {
-            return type_new(TYPE_BYTE);
-        }
-        if (strcmp(c, "I128") == 0)
-        {
-            return type_new(TYPE_I128);
-        }
-        if (strcmp(c, "U128") == 0)
-        {
-            return type_new(TYPE_U128);
-        }
-        if (strcmp(c, "i8") == 0)
-        {
-            return type_new(TYPE_I8);
-        }
-        if (strcmp(c, "u8") == 0)
-        {
-            return type_new(TYPE_U8);
-        }
-        if (strcmp(c, "i16") == 0)
-        {
-            return type_new(TYPE_I16);
-        }
-        if (strcmp(c, "u16") == 0)
-        {
-            return type_new(TYPE_U16);
-        }
-        if (strcmp(c, "i32") == 0)
-        {
-            return type_new(TYPE_I32);
-        }
-        if (strcmp(c, "u32") == 0)
-        {
-            return type_new(TYPE_U32);
-        }
-        if (strcmp(c, "i64") == 0)
-        {
-            return type_new(TYPE_I64);
-        }
-        if (strcmp(c, "u64") == 0)
-        {
-            return type_new(TYPE_U64);
-        }
-        if (strcmp(c, "i128") == 0)
-        {
-            return type_new(TYPE_I128);
-        }
-        if (strcmp(c, "u128") == 0)
-        {
-            return type_new(TYPE_U128);
-        }
+                if (strlen(t->name) == p_len && strncmp(t->name, p_ptr, p_len) == 0)
+                {
+                    char *c_part = xmalloc(c_len + 1);
+                    strncpy(c_part, c_ptr, c_len);
+                    c_part[c_len] = 0;
 
-        if (strcmp(c, "rune") == 0)
-        {
-            return type_new(TYPE_RUNE);
+                    Type *res = type_from_string_helper(c_part);
+                    free(c_part);
+                    return res;
+                }
+                if (p_end)
+                {
+                    p_ptr = p_end + 1;
+                }
+                else
+                {
+                    break;
+                }
+                if (c_end)
+                {
+                    c_ptr = c_end + 1;
+                }
+                else
+                {
+                    break;
+                }
+            }
         }
-        if (strcmp(c, "uint") == 0)
+        else if (strcmp(t->name, p) == 0)
         {
-            return type_new(TYPE_UINT);
-        }
 
-        Type *n = type_new(TYPE_STRUCT);
-        n->name = sanitize_mangled_name(c);
-        return n;
+            return type_from_string_helper(c);
+        }
     }
 
     Type *n = xmalloc(sizeof(Type));
@@ -1195,26 +1317,46 @@ Type *replace_type_formal(Type *t, const char *p, const char *c, const char *os,
             n->arg_count = 0;
             n->args = NULL;
         }
-
         else if (p && c)
         {
-            char suffix[256];
-            sprintf(suffix, "_%s", p); // e.g. "_T"
-            size_t nlen = strlen(t->name);
-            size_t slen = strlen(suffix);
+            // Suffix Match Logic (with multi-param splitting)
+            char p_suffix[1024];
+            p_suffix[0] = 0;
 
-            if (nlen > slen && strcmp(t->name + nlen - slen, suffix) == 0)
+            char *p_temp = xstrdup(p);
+            char *tok = strtok(p_temp, ",");
+            while (tok)
             {
-                // It ends in _T. Replace with _int (c), sanitizing for pointers
-                char *clean_c = sanitize_mangled_name(c);
-                char *new_name = xmalloc(nlen - slen + strlen(clean_c) + 2);
+                strcat(p_suffix, "_");
+                strcat(p_suffix, tok);
+                tok = strtok(NULL, ",");
+            }
+            free(p_temp);
+
+            size_t nlen = strlen(t->name);
+            size_t slen = strlen(p_suffix);
+
+            if (nlen >= slen && strcmp(t->name + nlen - slen, p_suffix) == 0)
+            {
+                char c_suffix[1024];
+                c_suffix[0] = 0;
+                char *c_temp = xstrdup(c);
+                tok = strtok(c_temp, ",");
+                while (tok)
+                {
+                    strcat(c_suffix, "_");
+                    char *clean = sanitize_mangled_name(tok);
+                    strcat(c_suffix, clean);
+                    free(clean);
+                    tok = strtok(NULL, ",");
+                }
+                free(c_temp);
+
+                char *new_name = xmalloc(nlen - slen + strlen(c_suffix) + 1);
                 strncpy(new_name, t->name, nlen - slen);
                 new_name[nlen - slen] = 0;
-                strcat(new_name, "_");
-                strcat(new_name, clean_c);
-                free(clean_c);
+                strcat(new_name, c_suffix);
                 n->name = new_name;
-                // Ensure it's concrete to prevent double mangling later
                 n->kind = TYPE_STRUCT;
                 n->arg_count = 0;
                 n->args = NULL;
@@ -1622,6 +1764,92 @@ char *instantiate_function_template(ParserContext *ctx, const char *name, const 
     }
 
     const char *subst_arg = unmangled_type ? unmangled_type : concrete_type;
+
+    // Scan the original return type for generic struct patterns like "Triple_X_Y_Z"
+    // and instantiate them with the concrete types
+    if (tpl->func_node && tpl->func_node->func.ret_type)
+    {
+        const char *ret = tpl->func_node->func.ret_type;
+
+        // Build the param suffix (e.g., for "X,Y,Z" -> "_X_Y_Z")
+        char param_suffix[256];
+        param_suffix[0] = 0;
+        char *tmp = xstrdup(tpl->generic_param);
+        char *tokp = strtok(tmp, ",");
+        while (tokp)
+        {
+            strcat(param_suffix, "_");
+            strcat(param_suffix, tokp);
+            tokp = strtok(NULL, ",");
+        }
+        free(tmp);
+
+        // Check if ret_type ends with param_suffix (e.g., "Triple_X_Y_Z" ends with "_X_Y_Z")
+        size_t ret_len = strlen(ret);
+        size_t suffix_len = strlen(param_suffix);
+        if (ret_len > suffix_len && strcmp(ret + ret_len - suffix_len, param_suffix) == 0)
+        {
+            // Extract base struct name (e.g., "Triple" from "Triple_X_Y_Z")
+            size_t base_len = ret_len - suffix_len;
+            char *struct_base = xmalloc(base_len + 1);
+            strncpy(struct_base, ret, base_len);
+            struct_base[base_len] = 0;
+
+            // Check if it's a known generic template
+            GenericTemplate *gt = ctx->templates;
+            while (gt && strcmp(gt->name, struct_base) != 0)
+            {
+                gt = gt->next;
+            }
+            if (gt)
+            {
+                // Parse the concrete types from unmangled_type or concrete_type
+                const char *types_src = unmangled_type ? unmangled_type : concrete_type;
+
+                // Count params in template
+                int template_param_count = 1;
+                for (const char *p = tpl->generic_param; *p; p++)
+                {
+                    if (*p == ',')
+                    {
+                        template_param_count++;
+                    }
+                }
+
+                // Split concrete types
+                char **args = xmalloc(sizeof(char *) * template_param_count);
+                int arg_count = 0;
+                char *types_copy = xstrdup(types_src);
+                char *tok = strtok(types_copy, ",");
+                while (tok && arg_count < template_param_count)
+                {
+                    args[arg_count++] = xstrdup(tok);
+                    tok = strtok(NULL, ",");
+                }
+                free(types_copy);
+
+                // Now instantiate the struct with these args
+                Token dummy_tok = {0};
+                if (arg_count == 1)
+                {
+                    instantiate_generic(ctx, struct_base, args[0], args[0], dummy_tok);
+                }
+                else if (arg_count > 1)
+                {
+                    instantiate_generic_multi(ctx, struct_base, args, arg_count, dummy_tok);
+                }
+
+                // Cleanup
+                for (int i = 0; i < arg_count; i++)
+                {
+                    free(args[i]);
+                }
+                free(args);
+            }
+            free(struct_base);
+        }
+    }
+
     ASTNode *new_fn = copy_ast_replacing(tpl->func_node, tpl->generic_param, subst_arg, NULL, NULL);
     if (!new_fn || new_fn->type != NODE_FUNCTION)
     {
@@ -2157,12 +2385,14 @@ void instantiate_generic_multi(ParserContext *ctx, const char *tpl, char **args,
         if (param_count > 0 && arg_count > 0)
         {
             // First substitution
+
             i->strct.fields = copy_fields_replacing(
                 ctx, fields, t->struct_node->strct.generic_params[0], args[0]);
 
             // Subsequent substitutions (for params B, C, etc.)
             for (int j = 1; j < param_count && j < arg_count; j++)
             {
+
                 ASTNode *tmp = copy_fields_replacing(
                     ctx, i->strct.fields, t->struct_node->strct.generic_params[j], args[j]);
                 // This leaks prev fields, but that's acceptable for now, still, TODO.

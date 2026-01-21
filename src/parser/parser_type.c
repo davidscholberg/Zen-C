@@ -443,7 +443,23 @@ Type *parse_type_base(ParserContext *ctx, Lexer *l)
                 }
 
                 // Call multi-arg instantiation
-                instantiate_generic_multi(ctx, name, args, arg_count, t);
+                int is_generic_dep = 0;
+                for (int i = 0; i < arg_count; ++i)
+                {
+                    for (int k = 0; k < ctx->known_generics_count; ++k)
+                    {
+                        if (strcmp(args[i], ctx->known_generics[k]) == 0)
+                        {
+                            is_generic_dep = 1;
+                            break;
+                        }
+                    }
+                }
+
+                if (!is_generic_dep)
+                {
+                    instantiate_generic_multi(ctx, name, args, arg_count, t);
+                }
 
                 // Build mangled name
                 char mangled[256];
@@ -481,7 +497,21 @@ Type *parse_type_base(ParserContext *ctx, Lexer *l)
                 }
 
                 char *unmangled_arg = type_to_c_string(first_arg);
-                instantiate_generic(ctx, name, first_arg_str, unmangled_arg, t);
+
+                int is_single_dep = 0;
+                for (int k = 0; k < ctx->known_generics_count; ++k)
+                {
+                    if (strcmp(first_arg_str, ctx->known_generics[k]) == 0)
+                    {
+                        is_single_dep = 1;
+                        break;
+                    }
+                }
+
+                if (!is_single_dep)
+                {
+                    instantiate_generic(ctx, name, first_arg_str, unmangled_arg, t);
+                }
                 free(unmangled_arg);
 
                 char *clean_arg = sanitize_mangled_name(first_arg_str);
