@@ -41,6 +41,7 @@ typedef struct Symbol
     int is_autofree;
     Token decl_token;
     int is_const_value;
+    int is_def;
     int const_int_val;
     int is_moved;
     struct Symbol *next;
@@ -56,14 +57,14 @@ typedef struct Scope
 typedef struct FuncSig
 {
     char *name;
-    Token decl_token; // For LSP
+    Token decl_token;
     int total_args;
     char **defaults;
     Type **arg_types;
     Type *ret_type;
     int is_varargs;
-    int is_async; // Async function flag
-    int must_use; // Attribute: warn if return value discarded
+    int is_async;
+    int must_use;
     struct FuncSig *next;
 } FuncSig;
 
@@ -438,7 +439,7 @@ ASTNode *parse_defer(ParserContext *ctx, Lexer *l);
 ASTNode *parse_asm(ParserContext *ctx, Lexer *l);
 ASTNode *parse_plugin(ParserContext *ctx, Lexer *l);
 ASTNode *parse_var_decl(ParserContext *ctx, Lexer *l);
-ASTNode *parse_const(ParserContext *ctx, Lexer *l);
+ASTNode *parse_def(ParserContext *ctx, Lexer *l);
 ASTNode *parse_type_alias(ParserContext *ctx, Lexer *l);
 
 ASTNode *parse_function(ParserContext *ctx, Lexer *l, int is_async);

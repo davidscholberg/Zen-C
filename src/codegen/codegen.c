@@ -42,8 +42,6 @@ static void codegen_literal_expr(ASTNode *node, FILE *out)
 // Emit variable reference expression
 static void codegen_var_expr(ParserContext *ctx, ASTNode *node, FILE *out)
 {
-    (void)ctx; // May be used for context lookup in future
-
     if (g_current_lambda)
     {
         for (int i = 0; i < g_current_lambda->lambda.num_captures; i++)

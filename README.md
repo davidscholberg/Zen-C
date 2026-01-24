@@ -140,12 +140,25 @@ export ZC_ROOT=/path/to/Zen-C
 
 ### 1. Variables and Constants
 
-Zen C uses type inference by default.
+Zen C distinguishes between compile-time constants and runtime variables.
+
+#### Manifest Constants (`def`)
+Values that exist only at compile-time (folded into code). Use these for array sizes, fixed configuration, and magic numbers.
 
 ```zc
-var x = 42;                 // Inferred as int
-const PI = 3.14159;         // Compile-time constant
-var explicit: float = 1.0;  // Explicit type
+def MAX_SIZE = 1024;
+var buffer: char[MAX_SIZE]; // Valid array size
+```
+
+#### Variables (`var`)
+Storage locations in memory. Can be mutable or read-only (`const`).
+
+```zc
+var x = 10;             // Mutable
+x = 20;                 // OK
+
+var y: const int = 10;  // Read-only (Type qualified)
+// y = 20;              // Error: cannot assign to const
 ```
 
 ### 2. Primitive Types
@@ -168,8 +181,9 @@ var explicit: float = 1.0;  // Explicit type
 #### Arrays
 Fixed-size arrays with value semantics.
 ```zc
-var ints: int[5] = {1, 2, 3, 4, 5};
-var zeros: [int; 5]; // Zero-initialized
+def SIZE = 5;
+var ints: int[SIZE] = {1, 2, 3, 4, 5};
+var zeros: [int; SIZE]; // Zero-initialized
 ```
 
 #### Tuples
@@ -262,7 +276,8 @@ add(a: 10, b: 20);
 > **Note**: Named arguments must strictly follow the defined parameter order. `add(b: 20, a: 10)` is invalid.
 
 #### Const Arguments
-Function arguments can be marked as `const` to enforce read-only semantics.
+Function arguments can be marked as `const` to enforce read-only semantics. This is a type qualifier, not a manifest constant.
+
 ```zc
 fn print_val(v: const int) {
     // v = 10; // Error: Cannot assign to const variable
@@ -782,6 +797,9 @@ var re = regex! { ^[a-z]+$ };
 
 #### Generic C Macros
 Pass preprocessor macros through to C.
+
+> **Tip**: For simple constants, use `def` instead. Use `#define` when you need C-preprocessor macros or conditional compilation flags.
+
 ```zc
 #define MAX_BUFFER 1024
 ```

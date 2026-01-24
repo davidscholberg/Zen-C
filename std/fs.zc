@@ -3,9 +3,9 @@ import "./result.zc"
 import "./string.zc"
 import "./vec.zc"
 
-const Z_SEEK_SET: int = 0;
-const Z_SEEK_END: int = 2;
-const Z_F_OK: int = 0;
+def Z_SEEK_SET = 0;
+def Z_SEEK_END = 2;
+def Z_F_OK = 0;
 
 
 // TODO: restructure this tomorrow.

@@ -2327,35 +2327,48 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
         }
         else
         {
-            node = ast_create(NODE_EXPR_VAR);
-            node->token = t; // Set source token
-            node->var_ref.name = acc;
-            node->type_info = find_symbol_type_info(ctx, acc);
-
             Symbol *sym = find_symbol_entry(ctx, acc);
-            if (sym)
+            if (sym && sym->is_def && sym->is_const_value)
             {
-                sym->is_used = 1;
-                node->definition_token = sym->decl_token;
-            }
-
-            char *type_str = find_symbol_type(ctx, acc);
-
-            if (type_str)
-            {
-                node->resolved_type = type_str;
-                node->var_ref.suggestion = NULL;
+                // Constant Folding for 'def', emits literal
+                node = ast_create(NODE_EXPR_LITERAL);
+                node->token = t;
+                node->literal.type_kind = 0; // INT (assumed for now from const_int_val)
+                node->literal.int_val = sym->const_int_val;
+                node->type_info = type_new(TYPE_INT);
+                // No need for resolution
             }
             else
             {
-                node->resolved_type = xstrdup("unknown");
-                if (should_suppress_undef_warning(ctx, acc))
+                node = ast_create(NODE_EXPR_VAR);
+                node->token = t; // Set source token
+                node->var_ref.name = acc;
+                node->type_info = find_symbol_type_info(ctx, acc);
+
+                if (sym)
                 {
+                    sym->is_used = 1;
+                    node->definition_token = sym->decl_token;
+                }
+
+                char *type_str = find_symbol_type(ctx, acc);
+
+                if (type_str)
+                {
+                    node->resolved_type = type_str;
                     node->var_ref.suggestion = NULL;
                 }
                 else
                 {
-                    node->var_ref.suggestion = find_similar_symbol(ctx, acc);
+                    node->resolved_type = xstrdup("unknown");
+                    if (should_suppress_undef_warning(ctx, acc))
+                    {
+                        node->var_ref.suggestion = NULL;
+                    }
+                    else
+                    {
+                        node->var_ref.suggestion = find_similar_symbol(ctx, acc);
+                    }
                 }
             }
         }
@@ -3404,6 +3417,15 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
     {
         lexer_next(l); // consume op
         ASTNode *operand = parse_expr_prec(ctx, l, PREC_UNARY);
+
+        if (is_token(t, "&") && operand->type == NODE_EXPR_VAR)
+        {
+            Symbol *s = find_symbol_entry(ctx, operand->var_ref.name);
+            if (s && s->is_def)
+            {
+                zpanic_at(t, "Cannot take address of manifest constant '%s' (use 'var' if you need an address)", operand->var_ref.name);
+            }
+        }
 
         char *method = NULL;
         if (is_token(t, "-"))
