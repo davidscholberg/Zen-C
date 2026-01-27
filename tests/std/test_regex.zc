@@ -112,7 +112,7 @@ fn test_find() {
     let re = Regex::compile("[0-9]+");
     let m = re.find("abc123def456");
     
-    if (m.is_some() { " find locates match"; }
+    if (m.is_some()) { " find locates match"; }
     
     re.destroy();
     "";
@@ -136,7 +136,7 @@ fn test_convenience_functions() {
     if (regex_count("a", "banana") >= 1) { " regex_count works"; }
     
     let m = regex_find("[0-9]+", "id: 42");
-    if (m.is_some() { " regex_find works"; }
+    if (m.is_some()) { " regex_find works"; }
     
     "";
 }
