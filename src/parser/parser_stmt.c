@@ -462,13 +462,7 @@ ASTNode *parse_defer(ParserContext *ctx, Lexer *l)
     }
     else
     {
-        s = ast_create(NODE_RAW_STMT);
-        char *raw_content = consume_and_rewrite(ctx, l);
-        // consume_and_rewrite strips the semicolon, so we must add it back for proper C generation
-        char *safe_content = xmalloc(strlen(raw_content) + 2);
-        sprintf(safe_content, "%s;", raw_content);
-        free(raw_content);
-        s->raw_stmt.content = safe_content;
+        s = parse_statement(ctx, l);
     }
 
     ctx->in_defer_block = prev_in_defer;
