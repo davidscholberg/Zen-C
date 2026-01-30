@@ -5,8 +5,16 @@ import "./mem.zc";
 import "./string.zc";
 import "./option.zc";
 
-raw {    
-    void *_z_popen(char *command, char *type) {
+include <stdio.h>
+include <stdlib.h>
+
+// system() can be externed directly with const char*
+extern fn system(command: const char*) -> int;
+
+// Minimal raw block: only for opaque FILE* types
+// popen/pclose/fgets use FILE* which conflicts with void*
+raw {
+    void *_z_popen(const char *command, const char *type) {
         return (void *)popen(command, type);
     }
     
@@ -17,16 +25,11 @@ raw {
     char *_z_fgets(char *s, int size, void *stream) {
         return fgets(s, size, (FILE *)stream);
     }
-
-    int _z_system(char *command) {
-        return system(command);
-    }
 }
 
-extern fn _z_popen(command: char*, type: char*) -> void*;
+extern fn _z_popen(command: const char*, type: const char*) -> void*;
 extern fn _z_pclose(stream: void*) -> int;
 extern fn _z_fgets(s: char*, size: int, stream: void*) -> char*;
-extern fn _z_system(command: char*) -> int;
 
 struct Output {
     stdout: String;
@@ -105,7 +108,7 @@ impl Command {
     
     fn status(self) -> int {
         let cmd_str = self._build_cmd();
-        let code = _z_system(cmd_str.c_str());
+        let code = system(cmd_str.c_str());
         cmd_str.free();
         return code;
     }

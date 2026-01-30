@@ -938,6 +938,7 @@ let re = regex! { ^[a-z]+$ };
 | `@host` | 函數 | CUDA: 主機函數 (`__host__`)。 |
 | `@comptime` | 函數 | 用於編譯時執行的輔助函數。 |
 | `@derive(...)` | 結構體 | 自動實現 Trait。支持 `Debug`, `Eq` (智能派生), `Copy`, `Clone`。 |
+| `@ctype("type")` | 函數參數 | 覆蓋參數生成的 C 類型。 |
 | `@<custom>` | 任意 | 將泛型屬性傳遞給 C (例如 `@flatten`, `@alias("name")`)。 |
 
 #### 自定義屬性

@@ -5,6 +5,9 @@ include <unistd.h>
 include <sys/time.h>
 include <stdlib.h>
 
+// Minimal raw block: required because gettimeofday() uses struct timeval
+// which can't be declared in Zen-C without type conflicts, and time()
+// has conflicting type signature (time_t* vs void*)
 raw {
     static uint64_t _time_now_impl(void) {
         struct timeval tv;

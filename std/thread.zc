@@ -7,6 +7,11 @@ import "./core.zc"
 import "./result.zc"
 import "./mem.zc"
 
+// Essential raw block: required for pthread operations and closure trampolining
+// This block cannot be eliminated because:
+// 1. z_closure_T is an internal compiler type for Zen-C closures
+// 2. pthread_t, pthread_mutex_t are opaque types that can't be extern'd with void*
+// 3. The trampoline function needs to cast and execute Zen-C closures
 raw {
     typedef void (*ZenThreadFunc)(void*);
     

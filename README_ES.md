@@ -938,6 +938,7 @@ Decora funciones y structs para modificar el comportamiento del compilador.
 | `@host` | Fn | CUDA: Función de host (`__host__`). |
 | `@comptime` | Fn | Función auxiliar disponible para ejecución en tiempo de compilación. |
 | `@derive(...)` | Struct | Implementa traits automáticamente. Soporta `Debug`, `Eq` (Derivación Inteligente), `Copy`, `Clone`. |
+| `@ctype("tipo")` | Parámetro Fn | Sobrescribe el tipo C generado para un parámetro. |
 | `@<custom>` | Cualquier | Pasa atributos genéricos a C (ej. `@flatten`, `@alias("nombre")`). |
 
 #### Atributos Personalizados

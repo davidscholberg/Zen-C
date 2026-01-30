@@ -13,8 +13,17 @@ import "./mem.zc"
 def Z_AF_INET = 2;
 def Z_SOCK_STREAM = 1;
 
+// Direct externs for simple socket functions
+extern fn socket(domain: int, type: int, proto: int) -> int;
+extern fn close(fd: int) -> int;
+extern fn read(fd: int, buf: void*, count: usize) -> isize;
+
+// Minimal raw block: required for struct sockaddr_in usage
+// These functions encapsulate sockaddr_in setup because the struct layout
+// cannot be declared in Zen-C without type conflicts with C headers.
+// Also includes inet_pton, htons, bind, connect, listen, accept wrappers.
 raw {
-    static int _z_net_bind(int fd, char *host, int port) {
+    static int _z_net_bind(int fd, const char *host, int port) {
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
@@ -28,7 +37,7 @@ raw {
         return 0;
     }
 
-    static int _z_net_connect(int fd, char *host, int port) {
+    static int _z_net_connect(int fd, const char *host, int port) {
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
@@ -42,19 +51,15 @@ raw {
         return accept(fd, NULL, NULL);
     }
 
-    static ssize_t _z_net_write(int fd, char* buf, size_t n) {
+    static ssize_t _z_net_write(int fd, const char* buf, size_t n) {
         return write(fd, (const void*)buf, n);
     }
 }
 
-extern fn socket(domain: int, type: int, proto: int) -> int;
-extern fn close(fd: int) -> int;
-extern fn read(fd: int, buf: void*, count: usize) -> isize;
-
-extern fn _z_net_bind(fd: int, host: char*, port: int) -> int;
-extern fn _z_net_connect(fd: int, host: char*, port: int) -> int;
+extern fn _z_net_bind(fd: int, host: const char*, port: int) -> int;
+extern fn _z_net_connect(fd: int, host: const char*, port: int) -> int;
 extern fn _z_net_accept(fd: int) -> int;
-extern fn _z_net_write(fd: int, buf: char*, n: usize) -> isize;
+extern fn _z_net_write(fd: int, buf: const char*, n: usize) -> isize;
 
 
 struct TcpStream {

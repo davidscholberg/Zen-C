@@ -100,7 +100,7 @@ ASTNode *parse_trait(ParserContext *ctx, Lexer *l)
         char **param_names = NULL;
         int is_varargs = 0;
         char *args = parse_and_convert_args(ctx, l, &defaults, &arg_count, &arg_types, &param_names,
-                                            &is_varargs);
+                                            &is_varargs, NULL);
 
         char *ret = xstrdup("void");
         if (lexer_peek(l).type == TOK_ARROW)

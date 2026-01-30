@@ -938,6 +938,7 @@ let re = regex! { ^[a-z]+$ };
 | `@host` | 函数 | CUDA: 主机函数 (`__host__`)。 |
 | `@comptime` | 函数 | 用于编译时执行的辅助函数。 |
 | `@derive(...)` | 结构体 | 自动实现 Trait。支持 `Debug`, `Eq` (智能派生), `Copy`, `Clone`。 |
+| `@ctype("type")` | 函数参数 | 覆盖参数生成的 C 类型。 |
 | `@<custom>` | 任意 | 将泛型属性传递给 C (例如 `@flatten`, `@alias("name")`)。 |
 
 #### 自定义属性

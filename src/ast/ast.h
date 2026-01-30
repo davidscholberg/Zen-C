@@ -229,6 +229,8 @@ struct ASTNode
             int cuda_device; // @device -> __device__
             int cuda_host;   // @host -> __host__
 
+            char **c_type_overrides; // @ctype("...") per parameter
+
             Attribute *attributes; // Custom attributes
         } func;
 

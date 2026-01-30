@@ -99,10 +99,11 @@ ASTNode *parse_function(ParserContext *ctx, Lexer *l, int is_async)
     int count;
     Type **arg_types;
     char **param_names;
+    char **ctype_overrides;
     int is_varargs = 0;
 
-    char *args =
-        parse_and_convert_args(ctx, l, &defaults, &count, &arg_types, &param_names, &is_varargs);
+    char *args = parse_and_convert_args(ctx, l, &defaults, &count, &arg_types, &param_names,
+                                        &is_varargs, &ctype_overrides);
 
     char *ret = "void";
     Type *ret_type_obj = type_new(TYPE_VOID);
@@ -191,6 +192,7 @@ ASTNode *parse_function(ParserContext *ctx, Lexer *l, int is_async)
     node->func.defaults = defaults;
     node->func.ret_type_info = ret_type_obj;
     node->func.is_varargs = is_varargs;
+    node->func.c_type_overrides = ctype_overrides;
 
     if (gen_param)
     {

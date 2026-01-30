@@ -3392,7 +3392,8 @@ char *consume_and_rewrite(ParserContext *ctx, Lexer *l)
 }
 
 char *parse_and_convert_args(ParserContext *ctx, Lexer *l, char ***defaults_out, int *count_out,
-                             Type ***types_out, char ***names_out, int *is_varargs_out)
+                             Type ***types_out, char ***names_out, int *is_varargs_out,
+                             char ***ctype_overrides_out)
 {
     Token t = lexer_next(l);
     if (t.type != TOK_LPAREN)
@@ -3406,18 +3407,52 @@ char *parse_and_convert_args(ParserContext *ctx, Lexer *l, char ***defaults_out,
     char **defaults = xmalloc(sizeof(char *) * 16);
     Type **types = xmalloc(sizeof(Type *) * 16);
     char **names = xmalloc(sizeof(char *) * 16);
+    char **ctype_overrides = xmalloc(sizeof(char *) * 16);
 
     for (int i = 0; i < 16; i++)
     {
         defaults[i] = NULL;
         types[i] = NULL;
         names[i] = NULL;
+        ctype_overrides[i] = NULL;
     }
 
     if (lexer_peek(l).type != TOK_RPAREN)
     {
         while (1)
         {
+            // Check for @ctype("...") before parameter
+            char *ctype_override = NULL;
+            if (lexer_peek(l).type == TOK_AT)
+            {
+                lexer_next(l); // eat @
+                Token attr = lexer_next(l);
+                if (attr.type == TOK_IDENT && attr.len == 5 && strncmp(attr.start, "ctype", 5) == 0)
+                {
+                    if (lexer_next(l).type != TOK_LPAREN)
+                    {
+                        zpanic_at(lexer_peek(l), "Expected ( after @ctype");
+                    }
+                    Token ctype_tok = lexer_next(l);
+                    if (ctype_tok.type != TOK_STRING)
+                    {
+                        zpanic_at(ctype_tok, "@ctype requires a string argument");
+                    }
+                    // Extract string content (strip quotes)
+                    ctype_override = xmalloc(ctype_tok.len - 1);
+                    strncpy(ctype_override, ctype_tok.start + 1, ctype_tok.len - 2);
+                    ctype_override[ctype_tok.len - 2] = 0;
+                    if (lexer_next(l).type != TOK_RPAREN)
+                    {
+                        zpanic_at(lexer_peek(l), "Expected ) after @ctype string");
+                    }
+                }
+                else
+                {
+                    zpanic_at(attr, "Unknown parameter attribute @%.*s", attr.len, attr.start);
+                }
+            }
+
             Token t = lexer_next(l);
             // Handle 'self'
             if (t.type == TOK_IDENT && strncmp(t.start, "self", 4) == 0 && t.len == 4)
@@ -3470,6 +3505,7 @@ char *parse_and_convert_args(ParserContext *ctx, Lexer *l, char ***defaults_out,
                     types[count] = type_new_ptr(type_new(TYPE_VOID));
                     add_symbol(ctx, "self", "void*", types[count]);
                 }
+                ctype_overrides[count] = ctype_override;
                 count++;
             }
             else
@@ -3514,11 +3550,20 @@ char *parse_and_convert_args(ParserContext *ctx, Lexer *l, char ***defaults_out,
                 }
                 else
                 {
-                    strcat(buf, type_str);
+                    // Use @ctype override if present
+                    if (ctype_override)
+                    {
+                        strcat(buf, ctype_override);
+                    }
+                    else
+                    {
+                        strcat(buf, type_str);
+                    }
                     strcat(buf, " ");
                     strcat(buf, name);
                 }
 
+                ctype_overrides[count] = ctype_override;
                 count++;
 
                 if (lexer_peek(l).type == TOK_OP && is_token(lexer_peek(l), "="))
@@ -3593,6 +3638,10 @@ char *parse_and_convert_args(ParserContext *ctx, Lexer *l, char ***defaults_out,
     *count_out = count;
     *types_out = types;
     *names_out = names;
+    if (ctype_overrides_out)
+    {
+        *ctype_overrides_out = ctype_overrides;
+    }
     return buf;
 }
 

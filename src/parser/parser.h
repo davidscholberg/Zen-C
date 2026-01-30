@@ -561,7 +561,8 @@ ASTNode *parse_arrow_lambda_multi(ParserContext *ctx, Lexer *l, char **param_nam
  * @brief Parses and converts arguments.
  */
 char *parse_and_convert_args(ParserContext *ctx, Lexer *l, char ***defaults_out, int *count_out,
-                             Type ***types_out, char ***names_out, int *is_varargs_out);
+                             Type ***types_out, char ***names_out, int *is_varargs_out,
+                             char ***ctype_overrides_out);
 
 /**
  * @brief Checks if a file has been imported.

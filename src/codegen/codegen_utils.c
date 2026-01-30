@@ -714,7 +714,12 @@ void emit_func_signature(FILE *out, ASTNode *func, const char *name_override)
             }
 
             char *type_str = NULL;
-            if (func->func.arg_types && func->func.arg_types[i])
+            // Check for @ctype override first
+            if (func->func.c_type_overrides && func->func.c_type_overrides[i])
+            {
+                type_str = xstrdup(func->func.c_type_overrides[i]);
+            }
+            else if (func->func.arg_types && func->func.arg_types[i])
             {
                 type_str = codegen_type_to_string(func->func.arg_types[i]);
             }
@@ -724,6 +729,7 @@ void emit_func_signature(FILE *out, ASTNode *func, const char *name_override)
             }
 
             const char *name = "";
+
             if (func->func.param_names && func->func.param_names[i])
             {
                 name = func->func.param_names[i];
