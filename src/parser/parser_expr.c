@@ -1513,6 +1513,16 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
     {
         node = parse_fstring_literal(ctx, t);
     }
+    else if (t.type == TOK_RAW_STRING)
+    {
+        node = ast_create(NODE_EXPR_LITERAL);
+        node->token = t;
+        node->literal.type_kind = LITERAL_STRING;
+        node->literal.string_val = xmalloc(t.len - 2);
+        strncpy(node->literal.string_val, t.start + 2, t.len - 3);
+        node->literal.string_val[t.len - 3] = 0;
+        node->type_info = type_new(TYPE_STRING);
+    }
     else if (t.type == TOK_CHAR)
     {
         node = parse_char_literal(t);

@@ -3418,6 +3418,24 @@ char *run_comptime_block(ParserContext *ctx, Lexer *l)
         "size_t _z_check_bounds(size_t index, size_t size) { if (index >= size) { fprintf(stderr, "
         "\"Index out of bounds: %%zu >= %%zu\\n\", index, size); exit(1); } return index; }\n");
 
+    // Comptime helper functions
+    fprintf(f, "void yield(const char* s) { printf(\"%%s\", s); }\n");
+    fprintf(f, "void code(const char* s) { printf(\"%%s\", s); }\n"); // Alias for yield
+    fprintf(f, "void compile_error(const char* s) { "
+               "fprintf(stderr, \"Compile-time error: %%s\\n\", s); exit(1); }\n");
+    fprintf(f, "void compile_warn(const char* s) { "
+               "fprintf(stderr, \"Compile-time warning: %%s\\n\", s); }\n");
+
+    // Build metadata constants
+#ifdef _WIN32
+    fprintf(f, "#define __COMPTIME_TARGET__ \"windows\"\n");
+#elif defined(__APPLE__)
+    fprintf(f, "#define __COMPTIME_TARGET__ \"macos\"\n");
+#else
+    fprintf(f, "#define __COMPTIME_TARGET__ \"linux\"\n");
+#endif
+    fprintf(f, "#define __COMPTIME_FILE__ \"%s\"\n", g_current_filename);
+
     ASTNode *curr = nodes;
     ASTNode *stmts = NULL;
     ASTNode *stmts_tail = NULL;

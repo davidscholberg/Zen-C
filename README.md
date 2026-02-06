@@ -1,23 +1,39 @@
-
 <div align="center">
-
-[English](README.md) • [Русский](translations/README_RU.md) • [简体中文](translations/README_ZH_CN.md) • [繁體中文](translations/README_ZH_TW.md) • [Español](translations/README_ES.md) • [Italiano](translations/README_IT.md) • [Português Brasileiro](translations/README_PT_BR.md)
-
+  <p>
+    <a href="README.md">English</a> •
+    <a href="translations/README_RU.md">Русский</a> •
+    <a href="translations/README_ZH_CN.md">简体中文</a> •
+    <a href="translations/README_ZH_TW.md">繁體中文</a> •
+    <a href="translations/README_ES.md">Español</a> •
+    <a href="translations/README_IT.md">Italiano</a> •
+    <a href="translations/README_PT_BR.md">Português Brasileiro</a>
+  </p>
 </div>
 
 <div align="center">
+  <h1>Zen C</h1>
+  <h3>Modern Ergonomics. Zero Overhead. Pure C.</h3>
+  <br>
+  <p>
+    <a href="#"><img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build Status"></a>
+    <a href="#"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
+    <a href="#"><img src="https://img.shields.io/github/v/release/z-libs/Zen-C?label=version&color=orange" alt="Version"></a>
+    <a href="#"><img src="https://img.shields.io/badge/platform-linux-lightgrey" alt="Platform"></a>
+  </p>
+  <p><em>Write like a high-level language, run like C.</em></p>
+</div>
 
-# Zen C
+<hr>
 
-**Modern Ergonomics. Zero Overhead. Pure C.**
-
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![License](https://img.shields.io/badge/license-MIT-blue)]()
-[![Version](https://img.shields.io/github/v/release/z-libs/Zen-C?label=version&color=orange)]()
-[![Platform](https://img.shields.io/badge/platform-linux-lightgrey)]()
-
-*Write like a high-level language, run like C.*
-
+<div align="center">
+  <p>
+    <b><a href="#overview">Overview</a></b> •
+    <b><a href="#community">Community</a></b> •
+    <b><a href="#quick-start">Quick Start</a></b> •
+    <b><a href="#language-reference">Language Reference</a></b> •
+    <b><a href="#standard-library">Standard Library</a></b> •
+    <b><a href="#tooling">Toolchain</a></b>
+  </p>
 </div>
 
 ---
@@ -199,6 +215,7 @@ let y: const int = 10;  // Read-only (Type qualified)
 // y = 20;              // Error: cannot assign to const
 ```
 
+> [!TIP]
 > **Type Inference**: Zen C automatically infers types for initialized variables. It compiles to C23 `auto` on supported compilers, or GCC's `__auto_type` extension otherwise.
 
 ### 2. Primitive Types
@@ -222,6 +239,7 @@ let y: const int = 10;  // Read-only (Type qualified)
 | `iN` (for example, `i256`) | `_BitInt(N)` | Arbitrary bit-width signed integer (C23) |
 | `uN` (for example, `u42`) | `unsigned _BitInt(N)` | Arbitrary bit-width unsigned integer (C23) |
 
+> [!IMPORTANT]
 > **Best Practices for Portable Code**
 >
 > - Use **Portable Types** (`int`, `uint`, `i64`, `u8`, etc.) for all pure Zen C logic. `int` is guaranteed to be 32-bit signed on all architectures.
@@ -291,7 +309,8 @@ struct Flags {
 }
 ```
 
-> **Note**: Structs use [Move Semantics](#move-semantics--copy-safety) by default. Fields can be accessed via `.` even on pointers (Auto-Dereference).
+> [!NOTE]
+> Structs use [Move Semantics](#move-semantics--copy-safety) by default. Fields can be accessed via `.` even on pointers (Auto-Dereference).
 
 #### Opaque Structs
 You can define a struct as `opaque` to restrict access to its fields to the defining module only, while still allowing the struct to be allocated on the stack (size is known).
@@ -601,19 +620,23 @@ Zen C provides versatile options for printing to the console, including keywords
 
 #### Keywords
 
-- `print "text"`: Prints to `stdout` without a trailing newline.
-- `println "text"`: Prints to `stdout` with a trailing newline.
-- `eprint "text"`: Prints to `stderr` without a trailing newline.
-- `eprintln "text"`: Prints to `stderr` with a trailing newline.
+| Keyword | Description |
+|:---|:---|
+| `print "..."` | Prints to `stdout` without a trailing newline. |
+| `println "..."` | Prints to `stdout` **with** a trailing newline. |
+| `eprint "..."` | Prints to `stderr` without a trailing newline. |
+| `eprintln "..."` | Prints to `stderr` **with** a trailing newline. |
 
 #### Shorthands
 
 Zen C allows you to use string literals directly as statements for quick printing:
 
-- `"Hello World"`: Equivalent to `println "Hello World"`. (Implicitly adds newline)
-- `"Hello World"..`: Equivalent to `print "Hello World"`. (No trailing newline)
-- `!"Error"`: Equivalent to `eprintln "Error"`. (Output to stderr)
-- `!"Error"..`: Equivalent to `eprint "Error"`. (Output to stderr, no newline)
+| Syntax | Equivalent | Description |
+|:---|:---|:---|
+| `"Hz"` | `println "Hz"` | Prints to `stdout` with newline. |
+| `"Hz"..` | `print "Hz"` | Prints to `stdout` without newline. |
+| `!"Err"` | `eprintln "Err"` | Prints to `stderr` with newline. |
+| `!"Err"..` | `eprint "Err"` | Prints to `stderr` without newline. |
 
 #### String Interpolation (F-strings)
 
@@ -658,6 +681,7 @@ let f = fopen("file.txt", "r");
 defer fclose(f);
 ```
 
+> [!WARNING]
 > To prevent undefined behavior, control flow statements (`return`, `break`, `continue`, `goto`) are **not allowed** inside a `defer` block.
 
 #### Autofree
@@ -675,6 +699,7 @@ Zen C treats types with destructors (like `File`, `Vec`, or malloc'd pointers) a
 **Diagnostics & Philosophy**:
 If you see an error "Use of moved value", the compiler is telling you: *"This type owns a resource (like memory or a handle) and blindly copying it is unsafe."*
 
+> [!NOTE]
 > **Contrast:** Unlike C/C++, Zen C does not implicitly duplicate resource-owning values.
 
 **Function Arguments**:
@@ -833,12 +858,14 @@ impl Drop for Resource {
 }
 ```
 
+> [!IMPORTANT]
 > **Note:** If a variable is moved, `drop` is NOT called on the original variable. It adheres to [Resource Semantics](#resource-semantics-move-by-default).
 
 **Copy**
 
 Marker trait to opt-in to `Copy` behavior (implicit duplication) instead of Move semantics. Used via `@derive(Copy)`.
 
+> [!CAUTION]
 > **Rule:** Types that implement `Copy` must not define a destructor (`Drop`).
 
 ```zc
@@ -941,6 +968,87 @@ comptime {
 
 println "Build Date: {build_date}";
 ```
+
+<details>
+<summary><b>🔧 Helper Functions</b></summary>
+
+Special functions available inside `comptime` blocks for code generation and diagnostics:
+
+<table>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+<tr>
+<td><code>yield(str)</code></td>
+<td>Explicitly emit generated code (alternative to <code>printf</code>)</td>
+</tr>
+<tr>
+<td><code>code(str)</code></td>
+<td>Alias for <code>yield()</code> - clearer intent for code generation</td>
+</tr>
+<tr>
+<td><code>compile_error(msg)</code></td>
+<td>❌ Halt compilation with a fatal error message</td>
+</tr>
+<tr>
+<td><code>compile_warn(msg)</code></td>
+<td>⚠️ Emit a compile-time warning (allows compilation to continue)</td>
+</tr>
+</table>
+
+**Example:**
+```zc
+comptime {
+    compile_warn("Generating optimized code...");
+    
+    let ENABLE_FEATURE = 1;
+    if (ENABLE_FEATURE == 0) {
+        compile_error("Feature must be enabled!");
+    }
+    
+    // Use code() with raw strings for clean generation
+    code(r"let FEATURE_ENABLED = 1;");
+}
+```
+</details>
+
+<details>
+<summary><b>Build Metadata</b></summary>
+
+Access compiler build information at compile-time:
+
+<table>
+<tr>
+<th>Constant</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr>
+<td><code>__COMPTIME_TARGET__</code></td>
+<td>string</td>
+<td>Platform: <code>"linux"</code>, <code>"windows"</code>, or <code>"macos"</code></td>
+</tr>
+<tr>
+<td><code>__COMPTIME_FILE__</code></td>
+<td>string</td>
+<td>Current source filename being compiled</td>
+</tr>
+</table>
+
+**Example:**
+```zc
+comptime {
+    // Platform-specific code generation
+    println "let PLATFORM = \"{__COMPTIME_TARGET__}\";";
+}
+
+println "Running on: {PLATFORM}";
+```
+</details>
+
+> **💡 Tip:** Use raw strings (`r"..."`) in comptime to avoid escaping braces: `code(r"fn test() { return 42; }")`. Otherwise, use `{{` and `}}` to escape braces inside regular strings.
+
 
 #### Embed
 Embed files as specified types.
@@ -1198,6 +1306,9 @@ Zen C includes a standard library (`std`) covering essential functionality.
 
 ### Key Modules
 
+<details>
+<summary>Click to see all Standard Library modules</summary>
+
 | Module | Description | Docs |
 | :--- | :--- | :--- |
 | **`std/vec.zc`** | Growable dynamic array `Vec<T>`. | [Docs](docs/std/vec.md) |
@@ -1217,6 +1328,8 @@ Zen C includes a standard library (`std`) covering essential functionality.
 | **`std/stack.zc`** | LIFO Stack `Stack<T>`. | [Docs](docs/std/stack.md) |
 | **`std/set.zc`** | Generic Hash Set `Set<T>`. | [Docs](docs/std/set.md) |
 | **`std/process.zc`** | Process execution and management. | [Docs](docs/std/process.md) |
+
+</details>
 
 ---
 
@@ -1297,13 +1410,19 @@ zc run app.zc --cc zig
 
 ### Test Suite Status
 
+<details>
+<summary>Click to view Compiler Support details</summary>
+
 | Compiler | Pass Rate | Supported Features | Known Limitations |
 |:---|:---:|:---|:---|
-| **GCC** | **100%** | All Features | None. |
-| **Clang** | **100%** | All Features | None. |
-| **Zig** | **100%** | All Features | None. Uses `zig cc` as a drop-in C compiler. |
-| **TCC** | **~70%** | Basic Syntax, Generics, Traits | No `__auto_type`, No Intel ASM, No Nested Functions. |
+| **GCC** | **100% (Full)** | All Features | None. |
+| **Clang** | **100% (Full)** | All Features | None. |
+| **Zig** | **100% (Full)** | All Features | None. Uses `zig cc` as a drop-in C compiler. |
+| **TCC** | **~70% (Basic)** | Basic Syntax, Generics, Traits | No `__auto_type`, No Intel ASM, No Nested Functions. |
 
+</details>
+
+> [!TIP]
 > **Recommendation:** Use **GCC**, **Clang**, or **Zig** for production builds. TCC is excellent for rapid prototyping due to its compilation speed but misses some advanced C extensions Zen C relies on for full feature support.
 
 ### Building with Zig
@@ -1351,7 +1470,8 @@ fn main() {
 }
 ```
 
-> **Note:** The `--cpp` flag switches the backend to `g++` and emits C++-compatible code (uses `auto` instead of `__auto_type`, function overloads instead of `_Generic`, and explicit casts for `void*`).
+> [!NOTE]
+> The `--cpp` flag switches the backend to `g++` and emits C++-compatible code (uses `auto` instead of `__auto_type`, function overloads instead of `_Generic`, and explicit casts for `void*`).
 
 #### CUDA Interop
 
@@ -1445,6 +1565,7 @@ let tid = local_id();
 ```
 
 
+> [!NOTE]
 > **Note:** The `--cuda` flag sets `nvcc` as the compiler and implies `--cpp` mode. Requires the NVIDIA CUDA Toolkit.
 
 ### C23 Support
@@ -1484,6 +1605,7 @@ fn main() {
 }
 ```
 
+> [!NOTE]
 > **Note:** Zen C string interpolation works with Objective-C objects (`id`) by calling `debugDescription` or `description`.
 
 ---
@@ -1509,3 +1631,17 @@ This project uses third-party libraries. Full license texts can be found in the 
 *   **[cJSON](https://github.com/DaveGamble/cJSON)** (MIT License): Used for JSON parsing and generation in the Language Server.
 *   **[zc-ape](https://github.com/OEvgeny/zc-ape)** (MIT License): The original Actually Portable Executable port of Zen-C by [Eugene Olonov](https://github.com/OEvgeny).
 *   **[Cosmopolitan Libc](https://github.com/jart/cosmopolitan)** (ISC License): The foundational library that makes APE possible.
+
+---
+
+<div align="center">
+  <p>
+    Copyright © 2026 Zen C Programming Language.<br>
+    Start your journey today.
+  </p>
+  <p>
+    <a href="https://discord.com/invite/q6wEsCmkJP">Discord</a> •
+    <a href="https://github.com/z-libs/Zen-C">GitHub</a> •
+    <a href="CONTRIBUTING.md">Contribute</a>
+  </p>
+</div>
