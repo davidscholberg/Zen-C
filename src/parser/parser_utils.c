@@ -2239,9 +2239,9 @@ FuncSig *find_func(ParserContext *ctx, const char *name)
     return NULL;
 }
 
-// Helper function to recursively scan AST for sizeof types and trigger instantiation of generic
-// structs
-static void trigger_sizeof_instantiations(ParserContext *ctx, ASTNode *node)
+// Helper function to recursively scan AST for sizeof types AND generic calls to trigger
+// instantiation
+static void trigger_instantiations(ParserContext *ctx, ASTNode *node)
 {
     if (!node)
     {
@@ -2302,64 +2302,98 @@ static void trigger_sizeof_instantiations(ParserContext *ctx, ASTNode *node)
             free(type_copy);
         }
     }
+    else if (node->type == NODE_EXPR_VAR)
+    {
+        const char *name = node->var_ref.name;
+        if (strchr(name, '_'))
+        {
+            GenericFuncTemplate *t = ctx->func_templates;
+            while (t)
+            {
+                size_t tlen = strlen(t->name);
+                if (strncmp(name, t->name, tlen) == 0 && name[tlen] == '_')
+                {
+                    char *template_name = t->name;
+                    char *concrete_arg = (char *)name + tlen + 1; // cast to avoid warning
 
-    // Recursively visit children based on node type
+                    Token dummy_tok = {0};
+                    char *unmangled = unmangle_ptr_suffix(concrete_arg);
+                    instantiate_function_template(ctx, template_name, concrete_arg, unmangled);
+                    free(unmangled);
+                    break; // Found match, stop searching
+                }
+                t = t->next;
+            }
+        }
+    }
+
     switch (node->type)
     {
     case NODE_FUNCTION:
-        trigger_sizeof_instantiations(ctx, node->func.body);
+        trigger_instantiations(ctx, node->func.body);
         break;
     case NODE_BLOCK:
-        trigger_sizeof_instantiations(ctx, node->block.statements);
+        trigger_instantiations(ctx, node->block.statements);
         break;
     case NODE_VAR_DECL:
-        trigger_sizeof_instantiations(ctx, node->var_decl.init_expr);
+        trigger_instantiations(ctx, node->var_decl.init_expr);
         break;
     case NODE_RETURN:
-        trigger_sizeof_instantiations(ctx, node->ret.value);
+        trigger_instantiations(ctx, node->ret.value);
         break;
     case NODE_EXPR_BINARY:
-        trigger_sizeof_instantiations(ctx, node->binary.left);
-        trigger_sizeof_instantiations(ctx, node->binary.right);
+        trigger_instantiations(ctx, node->binary.left);
+        trigger_instantiations(ctx, node->binary.right);
         break;
     case NODE_EXPR_UNARY:
-        trigger_sizeof_instantiations(ctx, node->unary.operand);
+        trigger_instantiations(ctx, node->unary.operand);
         break;
     case NODE_EXPR_CALL:
-        trigger_sizeof_instantiations(ctx, node->call.callee);
-        trigger_sizeof_instantiations(ctx, node->call.args);
+        trigger_instantiations(ctx, node->call.callee);
+        trigger_instantiations(ctx, node->call.args);
         break;
     case NODE_EXPR_MEMBER:
-        trigger_sizeof_instantiations(ctx, node->member.target);
+        trigger_instantiations(ctx, node->member.target);
         break;
     case NODE_EXPR_INDEX:
-        trigger_sizeof_instantiations(ctx, node->index.array);
-        trigger_sizeof_instantiations(ctx, node->index.index);
+        trigger_instantiations(ctx, node->index.array);
+        trigger_instantiations(ctx, node->index.index);
         break;
     case NODE_EXPR_CAST:
-        trigger_sizeof_instantiations(ctx, node->cast.expr);
+        trigger_instantiations(ctx, node->cast.expr);
         break;
     case NODE_IF:
-        trigger_sizeof_instantiations(ctx, node->if_stmt.condition);
-        trigger_sizeof_instantiations(ctx, node->if_stmt.then_body);
-        trigger_sizeof_instantiations(ctx, node->if_stmt.else_body);
+        trigger_instantiations(ctx, node->if_stmt.condition);
+        trigger_instantiations(ctx, node->if_stmt.then_body);
+        trigger_instantiations(ctx, node->if_stmt.else_body);
         break;
     case NODE_WHILE:
-        trigger_sizeof_instantiations(ctx, node->while_stmt.condition);
-        trigger_sizeof_instantiations(ctx, node->while_stmt.body);
+        trigger_instantiations(ctx, node->while_stmt.condition);
+        trigger_instantiations(ctx, node->while_stmt.body);
         break;
     case NODE_FOR:
-        trigger_sizeof_instantiations(ctx, node->for_stmt.init);
-        trigger_sizeof_instantiations(ctx, node->for_stmt.condition);
-        trigger_sizeof_instantiations(ctx, node->for_stmt.step);
-        trigger_sizeof_instantiations(ctx, node->for_stmt.body);
+        trigger_instantiations(ctx, node->for_stmt.init);
+        trigger_instantiations(ctx, node->for_stmt.condition);
+        trigger_instantiations(ctx, node->for_stmt.step);
+        trigger_instantiations(ctx, node->for_stmt.body);
+        break;
+    case NODE_EXPR_STRUCT_INIT:
+        trigger_instantiations(ctx, node->struct_init.fields);
+        break;
+    case NODE_MATCH:
+        trigger_instantiations(ctx, node->match_stmt.expr);
+        trigger_instantiations(ctx, node->match_stmt.cases);
+        break;
+    case NODE_MATCH_CASE:
+        trigger_instantiations(ctx, node->match_case.guard);
+        trigger_instantiations(ctx, node->match_case.body);
         break;
     default:
         break;
     }
 
     // Visit next sibling
-    trigger_sizeof_instantiations(ctx, node->next);
+    trigger_instantiations(ctx, node->next);
 }
 
 char *instantiate_function_template(ParserContext *ctx, const char *name, const char *concrete_type,
@@ -2372,9 +2406,26 @@ char *instantiate_function_template(ParserContext *ctx, const char *name, const 
     }
 
     char *clean_type = sanitize_mangled_name(concrete_type);
+
+    int is_still_generic = 0;
+    if (strlen(clean_type) == 1 && isupper(clean_type[0]))
+    {
+        is_still_generic = 1;
+    }
+
+    if (is_known_generic(ctx, clean_type))
+    {
+        is_still_generic = 1;
+    }
+
     char *mangled = xmalloc(strlen(name) + strlen(clean_type) + 2);
     sprintf(mangled, "%s_%s", name, clean_type);
     free(clean_type);
+
+    if (is_still_generic)
+    {
+        return mangled;
+    }
 
     if (find_func(ctx, mangled))
     {
@@ -2502,8 +2553,8 @@ char *instantiate_function_template(ParserContext *ctx, const char *name, const 
     }
 
     // Scan the function body for sizeof expressions and trigger instantiation
-    // of any generic structs referenced there (e.g., sizeof(RcInner_int32_t))
-    trigger_sizeof_instantiations(ctx, new_fn->func.body);
+    // of any generic structs or functions referenced there
+    trigger_instantiations(ctx, new_fn->func.body);
 
     free(new_fn->func.name);
     new_fn->func.name = xstrdup(mangled);
@@ -2902,6 +2953,8 @@ void instantiate_methods(ParserContext *ctx, GenericImplTemplate *it,
                 gt = gt->next;
             }
         }
+
+        trigger_instantiations(ctx, meth->func.body);
 
         meth = meth->next;
     }
