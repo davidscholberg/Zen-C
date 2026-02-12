@@ -5984,6 +5984,34 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                     zpanic_at(op, "Cannot assign to const variable '%s'", lhs->var_ref.name);
                 }
             }
+            else if (lhs->type == NODE_EXPR_INDEX || lhs->type == NODE_EXPR_MEMBER)
+            {
+                ASTNode *base = lhs;
+                while (base)
+                {
+                    if (base->type == NODE_EXPR_INDEX)
+                    {
+                        base = base->index.array;
+                    }
+                    else if (base->type == NODE_EXPR_MEMBER)
+                    {
+                        base = base->member.target;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if (base && base->type == NODE_EXPR_VAR)
+                {
+                    Type *t = find_symbol_type_info(ctx, base->var_ref.name);
+                    if (t && t->is_const)
+                    {
+                        zpanic_at(op, "Cannot assign to element of const variable '%s'",
+                                  base->var_ref.name);
+                    }
+                }
+            }
         }
 
         int is_compound = 0;
