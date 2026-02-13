@@ -1,4 +1,4 @@
-name: Zen-C CI
+name: CI
 
 on:
   push:
@@ -8,21 +8,63 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [macos-15-intel, self-hosted]
-    runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: make
-      run: make
-    - name: make test
-      run: make test
+    - name: Run clang-format style check
+      uses: jidicula/clang-format-action@v4.11.0
+      with:
+        clang-format-version: '15'
+        check-path: 'src'
 
-  build-ape:
+  test:
+    name: Test (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux GCC
+            os: ubuntu-latest
+            cc: gcc
+          - name: Linux Clang
+            os: ubuntu-latest
+            cc: clang
+          - name: Linux Zig CC
+            os: ubuntu-latest
+            cc: zig cc
+            setup_zig: true
+          - name: macOS
+            os: macos-15-intel
+            cc: cc # System default (usually clang)
+          - name: Self-Hosted
+            os: self-hosted
+            cc: gcc # Default
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Zig
+      if: matrix.setup_zig
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: master
+
+    - name: Build
+      run: |
+        if [ "${{ matrix.cc }}" = "zig cc" ]; then
+           make CC="zig cc"
+        else
+           make CC="${{ matrix.cc }}"
+        fi
+
+    - name: Run Tests
+      run: ./tests/scripts/run_tests.sh --cc "${{ matrix.cc }}"
+
+  ape:
+    name: Build APE
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -43,7 +85,6 @@ jobs:
 
     - name: Build APE
       run: |
-        # Ensure PATH is updated and build with tag-aware versioning
         export PATH="$HOME/cosmocc/bin:$PATH"
         make clean
         make ape
