@@ -13,11 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Run clang-format style check
-      uses: jidicula/clang-format-action@v4.11.0
-      with:
-        clang-format-version: '18'
-        check-path: 'src'
+    - name: Install and Run clang-format
+      run: |
+        sudo apt-get update && sudo apt-get install -y clang-format
+        find src -name '*.c' -o -name '*.h' | xargs clang-format --dry-run --Werror
 
   test:
     name: Test (${{ matrix.name }})
