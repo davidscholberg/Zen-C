@@ -843,7 +843,7 @@ impl Drop for Risorsa {
 }
 ```
 
-> **Nota:** Se una variabile viene spostata, `drop` NON verrà chiamato sulla variabile originale. Aderisce alle [Semantiche delle Risorse](#semantiche-delle-risorse)
+> [!NOTE] Se una variabile viene spostata, `drop` NON verrà chiamato sulla variabile originale. Aderisce alle [Semantiche delle Risorse](#semantiche-delle-risorse)
 
 **Copy** (lett. _copia_)
 
@@ -953,7 +953,7 @@ println "Data compilazione: {data_compilazione}";
 ```
 
 <details>
-<summary><b>🔧 Funzioni Helper</b></summary>
+<summary><b>Funzioni Helper</b></summary>
 
 Funzioni speciali disponibili all'interno dei blocchi `comptime`:
 
@@ -972,11 +972,11 @@ Funzioni speciali disponibili all'interno dei blocchi `comptime`:
 </tr>
 <tr>
 <td><code>compile_error(msg)</code></td>
-<td>❌ Interrompe la compilazione con un messaggio di errore fatale</td>
+<td>Interrompe la compilazione con un messaggio di errore fatale</td>
 </tr>
 <tr>
 <td><code>compile_warn(msg)</code></td>
-<td>⚠️ Emette un avviso al momento della compilazione (consente di continuare)</td>
+<td>Emette un avviso al momento della compilazione (consente di continuare)</td>
 </tr>
 </table>
 
@@ -997,7 +997,7 @@ comptime {
 </details>
 
 <details>
-<summary><b>📦 Metadati di Build</b></summary>
+<summary><b>Metadati di Build</b></summary>
 
 Accedi alle informazioni di build del compilatore al momento della compilazione:
 
@@ -1030,7 +1030,8 @@ println "In esecuzione su: {PLATFORM}";
 ```
 </details>
 
-> **💡 Suggerimento:** Usa raw strings (`r"..."`) in comptime per evitare di eseguire l'escape delle parentesi graffe: `code(r"fn test() { return 42; }")`. Altrimenti, usa `{{` e `}}` per l'escape nelle stringhe normali.
+> [!TIP]
+> Usa raw strings (`r"..."`) in comptime per evitare di eseguire l'escape delle parentesi graffe: `code(r"fn test() { return 42; }")`. Altrimenti, usa `{{` e `}}` per l'escape nelle stringhe normali.
 
 
 #### Incorporati
@@ -1055,7 +1056,8 @@ let re = regex! { ^[a-z]+$ };
 #### Macro C Generiche
 Passa delle macro del preprocessore C.
 
-> **Consiglio**: Per delle semplici costanti, utilizza `def`. Usa `#define` solo quanto ti servono macro del preprocessore C o flag di compilazione condizionale.
+> [!TIP]
+> Per delle semplici costanti, utilizza `def`. Usa `#define` solo quanto ti servono macro del preprocessore C o flag di compilazione condizionale.
 
 ```zc
 #define BUFFER_MASSIMO 1024
@@ -1160,7 +1162,7 @@ fn aggiungi_cinque(x: int) -> int {
 | **Clobber** | `: clobber("rax")` | `"rax"` |
 | **Memory** | `: clobber("memoria")` | `"memoria"` |
 
-> **Nota:** Quando si usa la sintassi Intel (via `-masm=intel`), dovrai assicurarti che la tua build sia configurata correttamente (per esempio, `//> cflags: -masm=intel`). TCC non supporta la sintassi assembly Intel.
+> [!NOTE] Quando si usa la sintassi Intel (via `-masm=intel`), dovrai assicurarti che la tua build sia configurata correttamente (per esempio, `//> cflags: -masm=intel`). TCC non supporta la sintassi assembly Intel.
 
 
 ### 15. Direttive della Build

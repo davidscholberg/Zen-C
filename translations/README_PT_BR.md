@@ -578,6 +578,7 @@ Zen C suporta sobrecarga de operadores para structs definidos pelo usuário atra
 | **Índice** | `a[i]` | `get(a, i)` |
 | | `a[i] = v` | `set(a, i, v)` |
 
+> [!NOTE] 
 > **Nota sobre a Igualdade de Strings**:
 > - `string == string` performa uma **comparação de valores** (equivalente a `strcmp`).
 > - `char* == char*` performa **comparação de ponteiros** (checa os endereços da memória).
@@ -676,6 +677,7 @@ let f = fopen("file.txt", "r");
 defer fclose(f);
 ```
 
+> [!WARNING]
 > Para prevenir comportamento indefinido, declarações de fluxo de controle (`return`, `break`, `continue`, `goto`) **não são permitidas** dentro de um bloco `defer`.
 
 #### Autofree
@@ -693,6 +695,7 @@ Zen C trata tipos com destrutores (como `File`, `Vec`, ou ponteiros mallocados) 
 **Diagnósticos & Filosofia**:
 Se você vir um erro "Use of moved value", o compilador está dizendo: *"Este tipo possui um recurso (como memória ou um handle) e copiá-lo cegamente é inseguro."*
 
+> [!NOTE]
 > **Contraste:** Diferente de C/C++, Zen C não duplica implicitamente valores que possuem recursos.
 
 **Argumentos de Função**:
@@ -857,7 +860,7 @@ impl Drop for Resource {
 
 Trait marcador para optar pelo comportamento `Copy` (duplicação implícita) em vez de semântica Move. Usado via `@derive(Copy)`.
 
-> **Regra:** Tipos que implementam `Copy` não devem definir um destrutor (`Drop`).
+> [!CAUTION] Tipos que implementam `Copy` não devem definir um destrutor (`Drop`).
 
 ```zc
 @derive(Copy)
@@ -995,7 +998,7 @@ comptime {
 println "Executando em: {PLATFORM}";
 ```
 
-> **Nota**: Use `{{` e `}}` para escapar chaves dentro de strings comptime.
+> **Dica:** Use raw strings (`r"..."`) em comptime para evitar escapar chaves: `code(r"fn test() { return 42; }")`. De lo contrario, use `{{` e `}}` para escapar chaves em strings regulares.
 
 #### Embed
 Incorpore arquivos como tipos especificados.
@@ -1287,13 +1290,13 @@ Zen C inclui um Language Server embutido (`zc lsp`) e um REPL para aprimorar a e
 
 O Zen C Language Server (LSP) suporta funcionalidades padrão de LSP para integração com editores, fornecendo:
 
-* **Go to Definition** - Vá para definição
-* **Find References** - Encontrar referências
-* **Hover Information** - Informação com sobreposição do ponteiro do mouse
-* **Completion** - Auto-completar (Nomes de Função/Struct, compleção de ponto para métodos/campos)
-* **Document Symbols** - Símbolos de documento (Outline)
-* **Signature Help** - Ajuda de assinatura
-* **Diagnostics** - Diagnóstico (Sintaxe/Erros semânticos)
+*   **Go to Definition** - Vá para definição
+*   **Find References** - Encontrar referências
+*   **Hover Information** - Informação com sobreposição do ponteiro do mouse
+*   **Completion** - Auto-completar (Nomes de Função/Struct, compleção de ponto para métodos/campos)
+*   **Document Symbols** - Símbolos de documento (Outline)
+*   **Signature Help** - Ajuda de assinatura
+*   **Diagnostics** - Diagnóstico (Sintaxe/Erros semânticos)
 
 Para inicializar o servidor da linguagem (tipicamente configurado nas configurações LSP do seu editor):
 
@@ -1309,9 +1312,9 @@ O Read-Eval-Print Loop permite que você experimente seu código Zen C interativ
 
 #### Funcionalidades:
 
-* **Código Interativo**: Escreva expressões ou declarações para avaliação imediata.
-* **Histórico Persistente**: Comandos são salvos em `~/.zprep_history`.
-* **Script de Inicialização**: Automaticamente carrega comandos de `~/.zprep_init.zc`.
+*   **Código Interativo**: Escreva expressões ou declarações para avaliação imediata.
+*   **Histórico Persistente**: Comandos são salvos em `~/.zprep_history`.
+*   **Script de Inicialização**: Automaticamente carrega comandos de `~/.zprep_init.zc`.
 
 #### Comandos
 

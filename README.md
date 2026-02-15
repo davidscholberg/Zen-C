@@ -212,6 +212,11 @@ let y: const int = 10;  // Read-only (Type qualified)
 | `iN` (for example, `i256`) | `_BitInt(N)` | Arbitrary bit-width signed integer (C23) |
 | `uN` (for example, `u42`) | `unsigned _BitInt(N)` | Arbitrary bit-width unsigned integer (C23) |
 
+#### Literals
+- **Integers**: Decimal (`123`), Hex (`0xFF`), Octal (`0o755`), Binary (`0b1011`).
+  - *Note*: Numbers with leading zeros are treated as decimal (`0123` is `123`), unlike C.
+- **Floats**: Standard (`3.14`), Scientific (`1e-5`, `1.2E3`).
+
 > [!IMPORTANT]
 > **Best Practices for Portable Code**
 >
@@ -962,7 +967,7 @@ println "Build Date: {build_date}";
 ```
 
 <details>
-<summary><b>🔧 Helper Functions</b></summary>
+<summary><b>Helper Functions</b></summary>
 
 Special functions available inside `comptime` blocks for code generation and diagnostics:
 
@@ -981,11 +986,11 @@ Special functions available inside `comptime` blocks for code generation and dia
 </tr>
 <tr>
 <td><code>compile_error(msg)</code></td>
-<td>❌ Halt compilation with a fatal error message</td>
+<td>Halt compilation with a fatal error message</td>
 </tr>
 <tr>
 <td><code>compile_warn(msg)</code></td>
-<td>⚠️ Emit a compile-time warning (allows compilation to continue)</td>
+<td>Emit a compile-time warning (allows compilation to continue)</td>
 </tr>
 </table>
 
@@ -1039,7 +1044,8 @@ println "Running on: {PLATFORM}";
 ```
 </details>
 
-> **💡 Tip:** Use raw strings (`r"..."`) in comptime to avoid escaping braces: `code(r"fn test() { return 42; }")`. Otherwise, use `{{` and `}}` to escape braces inside regular strings.
+> [!TIP]
+> Use raw strings (`r"..."`) in comptime to avoid escaping braces: `code(r"fn test() { return 42; }")`. Otherwise, use `{{` and `}}` to escape braces inside regular strings.
 
 
 #### Embed

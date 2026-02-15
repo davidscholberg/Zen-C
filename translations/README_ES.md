@@ -850,7 +850,7 @@ impl Drop for Recurso {
 }
 ```
 
-> **Nota:** Si una variable es movida, no se llama a `drop` en la variable original. Se adhiere a la [Semántica de Recursos](#semántica-de-recursos-movimiento-por-defecto).
+> [!NOTE] Si una variable es movida, no se llama a `drop` en la variable original. Se adhiere a la [Semántica de Recursos](#semántica-de-recursos-movimiento-por-defecto).
 
 **Copy**
 
@@ -961,7 +961,7 @@ println "Fecha de compilación: {fecha_compilacion}";
 ```
 
 <details>
-<summary><b>🔧 Funciones Auxiliares</b></summary>
+<summary><b>Funciones Auxiliares</b></summary>
 
 Funciones especiales disponibles dentro de bloques `comptime`:
 
@@ -980,11 +980,11 @@ Funciones especiales disponibles dentro de bloques `comptime`:
 </tr>
 <tr>
 <td><code>compile_error(msg)</code></td>
-<td>❌ Detiene la compilación con un mensaje de error fatal</td>
+<td>Detiene la compilación con un mensaje de error fatal</td>
 </tr>
 <tr>
 <td><code>compile_warn(msg)</code></td>
-<td>⚠️ Emite una advertencia en tiempo de compilación (permite continuar)</td>
+<td>Emite una advertencia en tiempo de compilación (permite continuar)</td>
 </tr>
 </table>
 
@@ -1005,7 +1005,7 @@ comptime {
 </details>
 
 <details>
-<summary><b>📦 Metadatos de Construcción</b></summary>
+<summary><b>Metadatos de Construcción</b></summary>
 
 Accede a información de construcción del compilador en tiempo de compilación:
 
@@ -1038,7 +1038,8 @@ println "Ejecutando en: {PLATFORM}";
 ```
 </details>
 
-> **💡 Consejo:** Usa raw strings (`r"..."`) en comptime para evitar escapar llaves: `code(r"fn test() { return 42; }")`. De lo contrario, usa `{{` y `}}` para escapar llaves en strings regulares.
+> [!TIP]
+> Usa raw strings (`r"..."`) en comptime para evitar escapar llaves: `code(r"fn test() { return 42; }")`. De lo contrario, usa `{{` y `}}` para escapar llaves en strings regulares.
 
 
 #### Embed
@@ -1063,7 +1064,8 @@ let re = regex! { ^[a-z]+$ };
 #### Macros de C Genéricas
 Pasa macros del preprocesador directamente a C.
 
-> **Consejo**: Para constantes simples, usa `def` en su lugar. Usa `#define` cuando necesites macros del preprocesador de C o flags de compilación condicional.
+> [!TIP]
+> Para constantes simples, usa `def` en su lugar. Usa `#define` cuando necesites macros del preprocesador de C o flags de compilación condicional.
 
 ```zc
 #define MAX_BUFFER 1024

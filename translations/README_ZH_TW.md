@@ -676,6 +676,7 @@ let f = fopen("file.txt", "r");
 defer fclose(f);
 ```
 
+> [!WARNING]
 > 為了防止未定義行為，`defer` 塊內不允許使用控制流語句（`return`, `break`, `continue`, `goto`）。
 
 #### Autofree
@@ -693,6 +694,7 @@ Zen C 將帶有析構函數（如 `File`, `Vec`, 或 malloc 的指針）的類�
 **診斷與哲學**：
 如果你看到錯誤 "Use of moved value"，編譯器是在告訴你：*"此類型擁有一個資源（如內存或句柄），盲目複製它是不安全的。"*
 
+> [!NOTE]
 > **對比：** 與 C/C++ 不同，Zen C 不會隱式複製擁有資源的值。
 
 **函數參數**：
@@ -851,13 +853,13 @@ impl Drop for Resource {
 }
 ```
 
-> **注意：** 如果一個變量被移動，則原始變量不會調用 `drop`。它遵循 [資源語義](#資源語義-默認移動)。
+> [!NOTE] 如果一個變量被移動，則原始變量不會調用 `drop`。它遵循 [資源語義](#資源語義-默認移動)。
 
 **Copy**
 
 標記 Trait，用於選擇支持 `Copy` 行為（隱式複製）而不是移動語義。通過 `@derive(Copy)` 使用。
 
-> **規則：** 實現了 `Copy` 的類型不得定義析構函數 (`Drop`)。
+> [!CAUTION] 實現了 `Copy` 的類型不得定義析構函數 (`Drop`)。
 
 ```zc
 @derive(Copy)
@@ -995,7 +997,7 @@ comptime {
 println "運行於: {PLATFORM}";
 ```
 
-> **注意**: 在 comptime 字串內使用 `{{` 和 `}}` 來轉義大括號。
+> [!TIP] 在 comptime 字串內使用 `{{` 和 `}}` 來轉義大括號。
 
 #### Embed
 將文件嵌入為指定類型。
@@ -1019,7 +1021,7 @@ let re = regex! { ^[a-z]+$ };
 #### 泛型 C 宏
 將預處理器宏傳遞給 C。
 
-> **提示**：對於簡單的常量，請使用 `def`。當你需要 C 預處理器宏或條件編譯標誌時，請使用 `#define`。
+> [!TIP]對於簡單的常量，請使用 `def`。當你需要 C 預處理器宏或條件編譯標誌時，請使用 `#define`。
 
 ```zc
 #define MAX_BUFFER 1024
@@ -1123,7 +1125,7 @@ fn add_five(x: int) -> int {
 | **破壞** | `: clobber("rax")` | `"rax"` |
 | **內存** | `: clobber("memory")` | `"memory"` |
 
-> **注意：** 使用 Intel 語法時（通過 `-masm=intel`），必須確保你的構建配置正確（例如，`//> cflags: -masm=intel`）。TCC 不支持 Intel 語法的匯編。
+> [!NOTE] 使用 Intel 語法時（通過 `-masm=intel`），必須確保你的構建配置正確（例如，`//> cflags: -masm=intel`）。TCC 不支持 Intel 語法的匯編。
 
 ### 15. 構建指令
 
@@ -1216,7 +1218,7 @@ fn main() {
 }
 ```
 
-> **優點**: 零樣板代碼。立即訪問頭文件中的所有內容。
+> [!NOTE] 零樣板代碼。立即訪問頭文件中的所有內容。
 > **缺點**: Zen C 不提供類型安全 (錯誤將在稍後由 C 編譯器捕獲)。
 
 #### 方法 2: 顯式 FFI (安全)
@@ -1234,7 +1236,7 @@ fn main() {
 }
 ```
 
-> **優點**: Zen C 確保類型匹配。
+> [!NOTE] Zen C 確保類型匹配。
 > **缺點**: 需要手動聲明函數。
 
 #### `import` vs `include`

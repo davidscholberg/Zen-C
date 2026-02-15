@@ -45,10 +45,11 @@ IdentifierPart  ::= [a-zA-Z0-9_]
 Integers can be decimal, hexadecimal, or binary.
 
 ```text
-IntegerLiteral ::= ( DecimalInt | HexInt | BinaryInt ) IntegerSuffix?
+IntegerLiteral ::= ( DecimalInt | HexInt | OctalInt | BinaryInt ) IntegerSuffix?
 
 DecimalInt ::= [0-9]+
 HexInt     ::= "0x" [0-9a-fA-F]+
+OctalInt   ::= "0o" [0-7]+
 BinaryInt  ::= "0b" [01]+
 
 IntegerSuffix ::= "u" | "L" | "u64" | ... 
@@ -58,10 +59,12 @@ IntegerSuffix ::= "u" | "L" | "u64" | ...
 ### Floating Point Literals
 
 ```text
-FloatLiteral ::= [0-9]+ "." [0-9]* FloatSuffix?
+FloatLiteral ::= [0-9]+ "." [0-9]* ExponentPart? FloatSuffix?
+               | [0-9]+ ExponentPart FloatSuffix?
                | [0-9]+ FloatSuffix
 
-FloatSuffix ::= "f"
+ExponentPart ::= ("e" | "E") ("+" | "-")? [0-9]+
+FloatSuffix  ::= "f"
 ```
 
 ### String Literals

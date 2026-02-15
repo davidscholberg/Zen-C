@@ -676,6 +676,7 @@ let f = fopen("file.txt", "r");
 defer fclose(f);
 ```
 
+> [!WARNING]
 > 为了防止未定义行为，`defer` 块内不允许使用控制流语句（`return`, `break`, `continue`, `goto`）。
 
 #### Autofree
@@ -693,6 +694,7 @@ Zen C 将带有析构函数（如 `File`, `Vec`, 或 malloc 的指针）的类�
 **诊断与哲学**：
 如果你看到错误 "Use of moved value"，编译器是在告诉你：*"此类型拥有一个资源（如内存或句柄），盲目复制它是不安全的。"*
 
+> [!NOTE]
 > **对比：** 与 C/C++ 不同，Zen C 不会隐式复制拥有资源的值。
 
 **函数参数**：
@@ -851,13 +853,13 @@ impl Drop for Resource {
 }
 ```
 
-> **注意：** 如果一个变量被移动，则原始变量不会调用 `drop`。它遵循 [资源语义](#资源语义-默认移动)。
+> [!NOTE] 如果一个变量被移动，则原始变量不会调用 `drop`。它遵循 [资源语义](#资源语义-默认移动)。
 
 **Copy**
 
 标记 Trait，用于选择支持 `Copy` 行为（隐式复制）而不是移动语义。通过 `@derive(Copy)` 使用。
 
-> **规则：** 实现了 `Copy` 的类型不得定义析构函数 (`Drop`)。
+> [!CAUTION] 实现了 `Copy` 的类型不得定义析构函数 (`Drop`)。
 
 ```zc
 @derive(Copy)
@@ -995,7 +997,7 @@ comptime {
 println "运行于: {PLATFORM}";
 ```
 
-> **注意**: 在 comptime 字符串内使用 `{{` 和 `}}` 来转义花括号。
+> [!TIP] 在 comptime 字符串内使用 `{{` 和 `}}` 来转义花括号。
 
 #### Embed
 将文件嵌入为指定类型。
@@ -1019,7 +1021,7 @@ let re = regex! { ^[a-z]+$ };
 #### 泛型 C 宏
 将预处理器宏传递给 C。
 
-> **提示**：对于简单的常量，请使用 `def`。当你需要 C 预处理器宏或条件编译标志时，请使用 `#define`。
+> [!TIP]对于简单的常量，请使用 `def`。当你需要 C 预处理器宏或条件编译标志时，请使用 `#define`。
 
 ```zc
 #define MAX_BUFFER 1024
@@ -1123,7 +1125,7 @@ fn add_five(x: int) -> int {
 | **破坏** | `: clobber("rax")` | `"rax"` |
 | **内存** | `: clobber("memory")` | `"memory"` |
 
-> **注意：** 使用 Intel 语法时（通过 `-masm=intel`），必须确保你的构建配置正确（例如，`//> cflags: -masm=intel`）。TCC 不支持 Intel 语法的汇编。
+> [!NOTE] 使用 Intel 语法时（通过 `-masm=intel`），必须确保你的构建配置正确（例如，`//> cflags: -masm=intel`）。TCC 不支持 Intel 语法的汇编。
 
 ### 15. 构建指令
 
@@ -1216,7 +1218,7 @@ fn main() {
 }
 ```
 
-> **优点**: 零样板代码。立即访问头文件中的所有内容。
+> [!NOTE] 零样板代码。立即访问头文件中的所有内容。
 > **缺点**: Zen C 不提供类型安全 (错误将在稍后由 C 编译器捕获)。
 
 #### 方法 2: 显式 FFI (安全)
@@ -1234,7 +1236,7 @@ fn main() {
 }
 ```
 
-> **优点**: Zen C 确保类型匹配。
+> [!NOTE] Zen C 确保类型匹配。
 > **缺点**: 需要手动声明函数。
 
 #### `import` vs `include`
