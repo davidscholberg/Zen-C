@@ -69,6 +69,7 @@ jobs:
         sudo make install
 
     - name: Build
+      shell: bash
       run: |
         if [ "${{ matrix.cc }}" = "zig cc" ]; then
            make  # Build zc with default CC (stable), but test zc using zig cc backend
