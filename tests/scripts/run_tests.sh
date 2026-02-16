@@ -39,14 +39,6 @@ for arg in "$@"; do
         USE_TYPECHECK=1
     fi
     
-    # Filter out object files on Windows/MinGW to prevent duplicate symbols
-    if [[ "$sys_type" == *"MINGW"* ]] || [[ "$sys_type" == *"MSYS"* ]] || [[ "$sys_type" == *"CYGWIN"* ]]; then
-        if [[ "$arg" == *".o" ]]; then
-            # Skip object files
-            continue
-        fi
-    fi
-    
     filtered_args+=("$arg")
     prev_arg="$arg"
 done

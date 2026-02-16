@@ -2,12 +2,11 @@ include "std/third-party/tre/include/tre.h"
 
 raw {
     // Include TRE implementation for static linking
-    #ifdef _WIN32
-      // Windows needs full paths or correct relative paths.
-      // Assuming build from root:
+    #if defined(_WIN32) && defined(_MSC_VER)
+      // Windows (MSVC) needs full source inclusion as linking .o files is hard
       #include "std/third-party/tre/tre_full.c"
     #else
-      // Linux/macOS: Link against object files in Makefile
+      // Linux/macOS/MinGW: Link against object files in Makefile
       // #include "std/third-party/tre/tre_full.c"
     #endif
 }
