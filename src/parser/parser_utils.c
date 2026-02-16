@@ -4235,14 +4235,14 @@ void register_plugin(ParserContext *ctx, const char *name, const char *alias)
         if (!plugin)
         {
             char path[1024];
-            snprintf(path, sizeof(path), "%s.so", name);
+            snprintf(path, sizeof(path), "%s%s", name, z_get_plugin_ext());
             plugin = zptr_load_plugin(path);
         }
 
         if (!plugin && !strchr(name, '/'))
         {
             char path[1024];
-            snprintf(path, sizeof(path), "./%s.so", name);
+            snprintf(path, sizeof(path), "%s%s%s", z_get_run_prefix(), name, z_get_plugin_ext());
             plugin = zptr_load_plugin(path);
         }
     }

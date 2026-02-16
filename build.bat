@@ -64,10 +64,18 @@ set SRCS=src\main.c ^
 
 rem Build
 echo Building Zen C (%ZEN_VERSION%)...
-%CC% %CFLAGS% %SRCS% -o zc.exe
+%CC% %CFLAGS% %SRCS% -o zc.exe -lws2_32
 if %ERRORLEVEL% NEQ 0 (
     echo Build failed!
     exit /b %ERRORLEVEL%
 )
 
 echo Build success! zc.exe created.
+
+rem Build plugins
+echo Building plugins...
+if not exist plugins mkdir plugins
+for %%f in (plugins\*.c) do (
+    echo Compiling plugin %%f...
+    %CC% %CFLAGS% -shared -o %%~dpnf.dll %%f
+)

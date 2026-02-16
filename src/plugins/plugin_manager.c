@@ -16,7 +16,8 @@ typedef struct PluginNode
 static PluginNode *head = NULL;
 
 #ifdef _WIN32
-// Windows stub for plugins (until we implement LoadLibrary support)
+#include <windows.h>
+
 void zptr_plugin_mgr_init(void)
 {
     head = NULL;
@@ -24,11 +25,11 @@ void zptr_plugin_mgr_init(void)
 
 void zptr_register_plugin(ZPlugin *plugin)
 {
-    // Simplified register logic for static plugins if any
     if (!plugin)
     {
         return;
     }
+
     if (zptr_find_plugin(plugin->name))
     {
         return;
@@ -43,8 +44,37 @@ void zptr_register_plugin(ZPlugin *plugin)
 
 ZPlugin *zptr_load_plugin(const char *path)
 {
-    fprintf(stderr, "Plugins not yet supported on Windows: %s\n", path);
-    return NULL;
+    HMODULE handle = LoadLibraryA(path);
+    if (!handle)
+    {
+        return NULL;
+    }
+
+    // Get init function
+    ZPluginInitFn init_fn = (ZPluginInitFn)GetProcAddress(handle, "z_plugin_init");
+    if (!init_fn)
+    {
+        fprintf(stderr, "Plugin '%s' missing 'z_plugin_init' symbol\n", path);
+        FreeLibrary(handle);
+        return NULL;
+    }
+
+    ZPlugin *plugin = init_fn();
+    if (!plugin)
+    {
+        fprintf(stderr, "Plugin '%s' init returned NULL\n", path);
+        FreeLibrary(handle);
+        return NULL;
+    }
+
+    // Register
+    PluginNode *node = malloc(sizeof(PluginNode));
+    node->plugin = plugin;
+    node->handle = (void *)handle;
+    node->next = head;
+    head = node;
+
+    return plugin;
 }
 
 ZPlugin *zptr_find_plugin(const char *name)
@@ -67,7 +97,10 @@ void zptr_plugin_mgr_cleanup(void)
     while (curr)
     {
         PluginNode *next = curr->next;
-        // No handle to close
+        if (curr->handle)
+        {
+            FreeLibrary((HMODULE)curr->handle);
+        }
         free(curr);
         curr = next;
     }

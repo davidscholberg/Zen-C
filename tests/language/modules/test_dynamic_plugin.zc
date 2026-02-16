@@ -1,5 +1,5 @@
 
-import plugin "plugins/brainfuck.so" as bf
+import plugin "plugins/brainfuck" as bf
 import "std/io.zc"
 
 test "dynamic plugin loading" {

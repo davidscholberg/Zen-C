@@ -5,14 +5,14 @@ import "../string.zc"
 import "./socket.zc"
 
 struct TcpStream {
-    handle: c_int;
+    handle: isize;
 }
 
 
 
 impl TcpStream {
     fn read(self, buf: char*, len: usize) -> Result<usize> {
-        let n = read(self.handle - 1, (void*)buf, len);
+        let n = _z_read(self.handle - 1, (void*)buf, len);
         if (n < 0) return Result<usize>::Err(strerror(errno));
         return Result<usize>::Ok((usize)n);
     }
@@ -37,18 +37,18 @@ impl TcpStream {
     
     fn close(self) {
         if (self.handle > 0) {
-            close(self.handle - 1);
+            _z_close(self.handle - 1);
             self.handle = 0;
         }
     }
 
     fn connect(host: char*, port: c_int) -> Result<TcpStream> {
-        let fd = socket(Z_AF_INET, Z_SOCK_STREAM, 0);
+        let fd = _z_socket(Z_AF_INET, Z_SOCK_STREAM, 0);
         if (fd < 0) return Result<TcpStream>::Err("Failed to create socket");
         
         let res = _z_net_connect(fd, host, port);
-        if (res == -1) { close(fd); return Result<TcpStream>::Err("Invalid address"); }
-        if (res == -2) { close(fd); return Result<TcpStream>::Err("Connection failed"); }
+        if (res == -1) { _z_close(fd); return Result<TcpStream>::Err("Invalid address"); }
+        if (res == -2) { _z_close(fd); return Result<TcpStream>::Err("Connection failed"); }
         
         return Result<TcpStream>::Ok(TcpStream { handle: fd + 1 });
     }
@@ -61,19 +61,19 @@ impl Drop for TcpStream {
 }
 
 struct TcpListener {
-    handle: c_int;
+    handle: isize;
 }
 
 impl TcpListener {
     fn bind(host: char*, port: c_int) -> Result<TcpListener> {
-        let fd = socket(Z_AF_INET, Z_SOCK_STREAM, 0);
+        let fd = _z_socket(Z_AF_INET, Z_SOCK_STREAM, 0);
         if (fd < 0) return Result<TcpListener>::Err("Failed to create socket");
         
         let res = _z_net_bind(fd, host, port);
         
-        if (res == -1) { close(fd); return Result<TcpListener>::Err("Invalid address"); }
-        if (res == -2) { close(fd); return Result<TcpListener>::Err("Bind failed"); }
-        if (res == -3) { close(fd); return Result<TcpListener>::Err("Listen failed"); }
+        if (res == -1) { _z_close(fd); return Result<TcpListener>::Err("Invalid address"); }
+        if (res == -2) { _z_close(fd); return Result<TcpListener>::Err("Bind failed"); }
+        if (res == -3) { _z_close(fd); return Result<TcpListener>::Err("Listen failed"); }
         
         return Result<TcpListener>::Ok(TcpListener { handle: fd + 1 });
     }
@@ -86,7 +86,7 @@ impl TcpListener {
     
     fn close(self) {
         if (self.handle > 0) {
-            close(self.handle - 1);
+            _z_close(self.handle - 1);
             self.handle = 0;
         }
     }

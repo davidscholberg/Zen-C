@@ -97,6 +97,15 @@ static inline const char *z_get_run_prefix(void)
 #endif
 }
 
+static inline const char *z_get_plugin_ext(void)
+{
+#ifdef _WIN32
+    return ".dll";
+#else
+    return ".so";
+#endif
+}
+
 // **ZEN VERSION**
 #ifndef ZEN_VERSION
 #define ZEN_VERSION "0.1.0" ///< Zen-C version.

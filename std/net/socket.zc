@@ -1,9 +1,17 @@
-
-include <sys/socket.h>
-include <netinet/in.h>
-include <arpa/inet.h>
-include <unistd.h>
-include <errno.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+typedef int socklen_t;
+#include <stdint.h>
+typedef intptr_t ssize_t;
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <errno.h>
+#endif
 
 import "../core.zc"
 import "../result.zc"
@@ -12,63 +20,132 @@ def Z_AF_INET = 2;
 def Z_SOCK_STREAM = 1;
 def Z_SOCK_DGRAM = 2;
 
-// Direct externs for simple socket functions
-extern fn socket(domain: c_int, type: c_int, proto: c_int) -> c_int;
-extern fn close(fd: c_int) -> c_int;
-extern fn read(fd: c_int, buf: void*, count: usize) -> isize;
+// Wrapper functions for platform independence
+// Return isize for socket handle (handles 64-bit SOCKET on Windows)
+extern fn _z_socket(domain: c_int, type: c_int, proto: c_int) -> isize;
+extern fn _z_close(fd: isize) -> c_int;
+extern fn _z_read(fd: isize, buf: void*, count: usize) -> isize; 
 extern fn strerror(errnum: c_int) -> char*;
 
-// Minimal raw block: required for struct sockaddr_in usage
 raw {
-    static int _z_net_bind(int fd, const char *host, int port) {
+#ifdef _WIN32
+    static int _z_net_initialized = 0;
+    static void _z_net_ensure_init(void) {
+        if (!_z_net_initialized) {
+            WSADATA wsaData;
+            WSAStartup(MAKEWORD(2, 2), &wsaData);
+            _z_net_initialized = 1;
+        }
+    }
+#endif
+
+    static ssize_t _z_socket(int domain, int type, int proto) {
+#ifdef _WIN32
+        _z_net_ensure_init();
+        // SOCKET is UINT_PTR (unsigned 64-bit on x64), cast to signed ssize_t
+        // INVALID_SOCKET is ~0, which becomes -1 when cast to signed
+        return (ssize_t)socket(domain, type, proto);
+#else
+        return socket(domain, type, proto);
+#endif
+    }
+
+    static int _z_close(ssize_t fd) {
+#ifdef _WIN32
+        return closesocket((SOCKET)fd);
+#else
+        return close((int)fd); // POSIX fd is int
+#endif
+    }
+
+    static ssize_t _z_read(ssize_t fd, void *buf, size_t count) {
+#ifdef _WIN32
+        // recv takes SOCKET
+        return recv((SOCKET)fd, (char*)buf, (int)count, 0);
+#else
+        return read((int)fd, buf, count);
+#endif
+    }
+
+    static int _z_net_bind(ssize_t fd, const char *host, int port) {
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
         if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) return -1; // Invalid addr
         
         int opt = 1;
-        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        
-        if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2; // Bind fail
-        if (listen(fd, 10) < 0) return -3; // Listen fail
+        // On Windows setsockopt takes SOCKET, on POSIX int. 
+        // Cast fd appropriately in usage or just pass. 
+        // Windows: setsockopt(SOCKET s, ...)
+        // POSIX: setsockopt(int s, ...)
+#ifdef _WIN32
+        setsockopt((SOCKET)fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
+        if (bind((SOCKET)fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2;
+        if (listen((SOCKET)fd, 10) < 0) return -3;
+#else
+        setsockopt((int)fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        if (bind((int)fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2;
+        if (listen((int)fd, 10) < 0) return -3;
+#endif
         return 0;
     }
 
-    static int _z_net_bind_udp(int fd, const char *host, int port) {
+    static int _z_net_bind_udp(ssize_t fd, const char *host, int port) {
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
         if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) return -1;
         
         int opt = 1;
-        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        
-        if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2;
+#ifdef _WIN32
+        setsockopt((SOCKET)fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
+        if (bind((SOCKET)fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2;
+#else
+        setsockopt((int)fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        if (bind((int)fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2;
+#endif
         return 0;
     }
 
-    static int _z_net_connect(int fd, const char *host, int port) {
+    static int _z_net_connect(ssize_t fd, const char *host, int port) {
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
         if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) return -1; 
         
-        if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2;
+#ifdef _WIN32
+        if (connect((SOCKET)fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2;
+#else
+        if (connect((int)fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2;
+#endif
         return 0;
     }
 
-    static int _z_net_accept(int fd) {
-        return accept(fd, NULL, NULL);
+    static ssize_t _z_net_accept(ssize_t fd) {
+#ifdef _WIN32
+        return (ssize_t)accept((SOCKET)fd, NULL, NULL);
+#else
+        return accept((int)fd, NULL, NULL);
+#endif
     }
 
-    static ssize_t _z_net_write(int fd, const char* buf, size_t n) {
-        return write(fd, (const void*)buf, n);
+    static ssize_t _z_net_write(ssize_t fd, const char* buf, size_t n) {
+#ifdef _WIN32
+        // send takes SOCKET
+        return send((SOCKET)fd, buf, (int)n, 0);
+#else
+        return write((int)fd, (const void*)buf, n);
+#endif
     }
 
-    static ssize_t _z_net_recvfrom(int fd, char *buf, size_t len, char *host_out, int *port_out) {
+    static ssize_t _z_net_recvfrom(ssize_t fd, char *buf, size_t len, char *host_out, int *port_out) {
         struct sockaddr_in addr;
         socklen_t addr_len = sizeof(addr);
-        ssize_t n = recvfrom(fd, buf, len, 0, (struct sockaddr *)&addr, &addr_len);
+#ifdef _WIN32
+        ssize_t n = recvfrom((SOCKET)fd, buf, (int)len, 0, (struct sockaddr *)&addr, &addr_len);
+#else
+        ssize_t n = recvfrom((int)fd, buf, len, 0, (struct sockaddr *)&addr, &addr_len);
+#endif
         if (n >= 0 && host_out != NULL && port_out != NULL) {
             inet_ntop(AF_INET, &addr.sin_addr, host_out, INET_ADDRSTRLEN);
             *port_out = ntohs(addr.sin_port);
@@ -76,20 +153,24 @@ raw {
         return n;
     }
 
-    static ssize_t _z_net_sendto(int fd, const char *buf, size_t len, const char *host, int port) {
+    static ssize_t _z_net_sendto(ssize_t fd, const char *buf, size_t len, const char *host, int port) {
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
         if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) return -1;
         
-        return sendto(fd, buf, len, 0, (struct sockaddr *)&addr, sizeof(addr));
+#ifdef _WIN32
+        return sendto((SOCKET)fd, buf, (int)len, 0, (struct sockaddr *)&addr, sizeof(addr));
+#else
+        return sendto((int)fd, buf, len, 0, (struct sockaddr *)&addr, sizeof(addr));
+#endif
     }
 }
 
-extern fn _z_net_bind(fd: c_int, host: const char*, port: c_int) -> c_int;
-extern fn _z_net_connect(fd: c_int, host: const char*, port: c_int) -> c_int;
-extern fn _z_net_accept(fd: c_int) -> c_int;
-extern fn _z_net_write(fd: c_int, buf: const char*, n: usize) -> isize;
-extern fn _z_net_recvfrom(fd: c_int, buf: char*, len: usize, host_out: char*, port_out: c_int*) -> isize;
-extern fn _z_net_sendto(fd: c_int, buf: const char*, len: usize, host: const char*, port: c_int) -> isize;
-extern fn _z_net_bind_udp(fd: c_int, host: const char*, port: c_int) -> c_int;
+extern fn _z_net_bind(fd: isize, host: const char*, port: c_int) -> c_int;
+extern fn _z_net_connect(fd: isize, host: const char*, port: c_int) -> c_int;
+extern fn _z_net_accept(fd: isize) -> isize;
+extern fn _z_net_write(fd: isize, buf: const char*, n: usize) -> isize;
+extern fn _z_net_recvfrom(fd: isize, buf: char*, len: usize, host_out: char*, port_out: c_int*) -> isize;
+extern fn _z_net_sendto(fd: isize, buf: const char*, len: usize, host: const char*, port: c_int) -> isize;
+extern fn _z_net_bind_udp(fd: isize, host: const char*, port: c_int) -> c_int;
