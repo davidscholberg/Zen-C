@@ -541,6 +541,7 @@ for i in 0..10 { ... }      // Exclusive (0 to 9)
 for i in 0..<10 { ... }     // Exclusive (Explicit)
 for i in 0..=10 { ... }     // Inclusive (0 to 10)
 for i in 0..10 step 2 { ... }
+for i in 10..0 step -1 { ... }  // Descending loop
 
 // Iterator (Vec or custom Iterable)
 for item in vec { ... }

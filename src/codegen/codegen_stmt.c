@@ -1289,13 +1289,27 @@ void codegen_node_single(ParserContext *ctx, ASTNode *node, FILE *out)
             fprintf(out, "ZC_AUTO %s = ", node->for_range.var_name);
         }
         codegen_expression(ctx, node->for_range.start, out);
-        if (node->for_range.is_inclusive)
+        if (node->for_range.step && node->for_range.step[0] == '-')
         {
-            fprintf(out, "; %s <= ", node->for_range.var_name);
+            if (node->for_range.is_inclusive)
+            {
+                fprintf(out, "; %s >= ", node->for_range.var_name);
+            }
+            else
+            {
+                fprintf(out, "; %s > ", node->for_range.var_name);
+            }
         }
         else
         {
-            fprintf(out, "; %s < ", node->for_range.var_name);
+            if (node->for_range.is_inclusive)
+            {
+                fprintf(out, "; %s <= ", node->for_range.var_name);
+            }
+            else
+            {
+                fprintf(out, "; %s < ", node->for_range.var_name);
+            }
         }
         codegen_expression(ctx, node->for_range.end, out);
         fprintf(out, "; %s", node->for_range.var_name);

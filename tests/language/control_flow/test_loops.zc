@@ -172,3 +172,28 @@ test "explicit exclusive range (..<)" {
     }
     assert(count4 == 5, "Expected 5 iterations for 0..<5")
 }
+
+test "negative step loops" {
+    // Exclusive range descending
+    let count = 0
+    for i in 10..0 step -1 {
+        count += 1
+    }
+    assert(count == 10, "10..0 step -1 expected 10 iterations")
+
+    // Inclusive range descending
+    let count2 = 0
+    for i in 10..=0 step -1 {
+        count2 += 1
+    }
+    // 10, 9, ..., 0 -> 11 iterations
+    assert(count2 == 11, "10..=0 step -1 expected 11 iterations")
+
+    // Larger step descending
+    let sum = 0
+    for i in 10..0 step -2 {
+        sum += i
+    }
+    // 10, 8, 6, 4, 2 -> sum = 30
+    assert(sum == 30, "10..0 step -2 expected sum 30")
+}

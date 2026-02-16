@@ -525,6 +525,7 @@ for i in 0..10 { ... }      // Исключительно (0 до 9)
 for i in 0..<10 { ... }     // Исключительно (явно)
 for i in 0..=10 { ... }     // Включительно (0 до 10)
 for i in 0..10 step 2 { ... }
+for i in 10..0 step -1 { ... }  // Descending loop
 
 // Итератор (Vec или пользовательский Iterable)
 for item in vec { ... }

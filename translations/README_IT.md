@@ -537,6 +537,7 @@ for i in 0..10 { ... }      // Esclusivo (Da 0 a 9)
 for i in 0..<10 { ... }     // Esclusivo (Esplicito)
 for i in 0..=10 { ... }     // Inclusivo (Da 0 a 10)
 for i in 0..10 step 2 { ... }
+for i in 10..0 step -1 { ... }  // Descending loop
 
 // Iteratore (Vec, Array, oppure un Iteratore personalizzato)
 for item in collection { ... }

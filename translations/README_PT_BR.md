@@ -539,6 +539,7 @@ for i in 0..10 { ... }      // Excludente (0 a 9)
 for i in 0..<10 { ... }     // Excludente (Explícito)
 for i in 0..=10 { ... }     // Inclusivo (0 a 10)
 for i in 0..10 step 2 { ... }
+for i in 10..0 step -1 { ... }  // Descending loop
 
 // Iterador (Vec ou Iterável Customizado)
 for item in vec { ... }

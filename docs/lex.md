@@ -55,6 +55,7 @@ BinaryInt  ::= "0b" [01]+
 IntegerSuffix ::= "u" | "L" | "u64" | ... 
 ```
 *Note: The lexer technically consumes any alphanumeric sequence following a number as a suffix.*
+*Note: Negative numbers are lexed as a unary operator (`-`) followed by an integer literal.*
 
 ### Floating Point Literals
 

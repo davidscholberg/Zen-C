@@ -1216,10 +1216,23 @@ ASTNode *parse_for(ParserContext *ctx, Lexer *l)
                     {
                         lexer_next(l);
                         Token s_tok = lexer_next(l);
-                        char *sval = xmalloc(s_tok.len + 1);
-                        strncpy(sval, s_tok.start, s_tok.len);
-                        sval[s_tok.len] = 0;
-                        n->for_range.step = sval;
+
+                        if (s_tok.type == TOK_OP && s_tok.len == 1 && s_tok.start[0] == '-')
+                        {
+                            Token num_tok = lexer_next(l);
+                            char *sval = xmalloc(s_tok.len + num_tok.len + 1);
+                            strncpy(sval, s_tok.start, s_tok.len);
+                            strncpy(sval + s_tok.len, num_tok.start, num_tok.len);
+                            sval[s_tok.len + num_tok.len] = 0;
+                            n->for_range.step = sval;
+                        }
+                        else
+                        {
+                            char *sval = xmalloc(s_tok.len + 1);
+                            strncpy(sval, s_tok.start, s_tok.len);
+                            sval[s_tok.len] = 0;
+                            n->for_range.step = sval;
+                        }
                     }
                     else
                     {
