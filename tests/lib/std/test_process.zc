@@ -10,10 +10,10 @@ test "process output" {
     
     assert(out.exit_code == 0);
     // echo usually outputs newline
-    assert(out.stdout.contains('h')); 
-    assert(out.stdout.contains('e'));
-    assert(out.stdout.contains('l'));
-    assert(out.stdout.contains('o'));
+    assert(out.std_out.contains('h')); 
+    assert(out.std_out.contains('e'));
+    assert(out.std_out.contains('l'));
+    assert(out.std_out.contains('o'));
     
     // out is dropped automatically
     // cmd is dropped automatically
