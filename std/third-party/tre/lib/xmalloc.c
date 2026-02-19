@@ -16,8 +16,13 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <assert.h>
+// #include <assert.h> // Use Zen C's assert check or fallback
 #include <stdio.h>
+
+#undef assert // Enforce our definition
+// Variadic macro to handle both assert(cond) and assert(cond, msg) from Zen C
+#define assert(cond, ...) do { if (!(cond)) { fprintf(stderr, "%s:%d: Assertion failed: %s\n", __FILE__, __LINE__, #cond); abort(); } } while(0)
+
 #define XMALLOC_INTERNAL 1
 #include "xmalloc.h"
 

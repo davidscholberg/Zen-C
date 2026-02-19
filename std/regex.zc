@@ -6,8 +6,8 @@ raw {
       // Windows (MSVC) needs full source inclusion as linking .o files is hard
       #include "std/third-party/tre/tre_full.c"
     #else
-      // Linux/macOS/MinGW: Link against object files in Makefile
-      // #include "std/third-party/tre/tre_full.c"
+      // Linux/macOS/MinGW: Also include source to ensure linking works without precompiled libs
+      #include "std/third-party/tre/tre_full.c"
     #endif
 }
 

@@ -232,12 +232,12 @@ ifdef OS
 endif
 
 test: $(TARGET) $(PLUGINS)
-	./tests/scripts/run_tests.sh $(TRE_OBJS)
+	./tests/scripts/run_tests.sh
 	./tests/scripts/run_codegen_tests.sh
 	./tests/scripts/run_example_transpile.sh
 
 test-tcc: $(TARGET) $(PLUGINS)
-	./tests/scripts/run_tests.sh --cc tcc $(TRE_OBJS)
+	./tests/scripts/run_tests.sh --cc tcc
 
 test-lsp: $(TARGET)
 	@echo "=> Building LSP Test Runner"

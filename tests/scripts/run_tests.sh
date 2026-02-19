@@ -97,6 +97,7 @@ while read -r test_file; do
             ((PASSED++))
         else
             echo "FAIL"
+            echo "$output"
             ((FAILED++))
             FAILED_TESTS="$FAILED_TESTS\n- $test_file"
         fi
