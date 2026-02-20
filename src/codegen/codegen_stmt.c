@@ -792,6 +792,18 @@ void codegen_node_single(ParserContext *ctx, ASTNode *node, FILE *out)
                 if (has_drop)
                 {
                     fprintf(out, "    int __z_drop_flag_%s = 1;\n", arg_name);
+
+                    ASTNode *defer_node = xmalloc(sizeof(ASTNode));
+                    defer_node->type = NODE_RAW_STMT;
+                    char *stmt_str = xmalloc(256 + strlen(arg_name) * 2 + strlen(arg_type->name));
+                    sprintf(stmt_str, "if (__z_drop_flag_%s) %s__Drop_glue(&%s);", arg_name,
+                            arg_type->name, arg_name);
+                    defer_node->raw_stmt.content = stmt_str;
+
+                    if (defer_count < MAX_DEFER)
+                    {
+                        defer_stack[defer_count++] = defer_node;
+                    }
                 }
             }
         }
