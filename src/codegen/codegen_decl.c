@@ -553,30 +553,7 @@ void emit_trait_defs(ASTNode *node, FILE *out)
                     {
                         fprintf(out, ", ");
                     }
-                    char *args_safe = xstrdup(m->func.args);
-                    // TODO: better replace, but for now this works.
-                    char *p = strstr(args_safe, "Self");
-                    while (p)
-                    {
-                        // Check word boundary
-                        if ((p == args_safe || !isalnum(p[-1])) && !isalnum(p[4]))
-                        {
-                            int off = p - args_safe;
-                            char *new_s = xmalloc(strlen(args_safe) + 10);
-                            strncpy(new_s, args_safe, off);
-                            new_s[off] = 0;
-                            strcat(new_s, "void*");
-                            strcat(new_s, p + 4);
-                            free(args_safe);
-                            args_safe = new_s;
-                            p = strstr(args_safe + off + 5, "Self");
-                        }
-                        else
-                        {
-                            p = strstr(p + 1, "Self");
-                        }
-                    }
-
+                    char *args_safe = replace_type_str(m->func.args, "Self", "void*", NULL, NULL);
                     fprintf(out, "%s", args_safe);
                     free(args_safe);
                 }
@@ -605,29 +582,18 @@ void emit_trait_defs(ASTNode *node, FILE *out)
                         if (comma)
                         {
                             // Substitute Self -> TraitName in wrapper args
-                            char *args_sub = xstrdup(comma + 1);
-                            char *p = strstr(args_sub, "Self");
-                            while (p)
-                            {
-                                int off = p - args_sub;
-                                char *new_s =
-                                    xmalloc(strlen(args_sub) + strlen(node->trait.name) + 5);
-                                strncpy(new_s, args_sub, off);
-                                new_s[off] = 0;
-                                strcat(new_s, node->trait.name);
-                                strcat(new_s, p + 4);
-                                free(args_sub);
-                                args_sub = new_s;
-                                p = strstr(args_sub + off + strlen(node->trait.name), "Self");
-                            }
-
+                            char *args_sub =
+                                replace_type_str(comma + 1, "Self", node->trait.name, NULL, NULL);
                             fprintf(out, ", %s", args_sub);
                             free(args_sub);
                         }
                     }
                     else
                     {
-                        fprintf(out, ", %s", m->func.args); // TODO: recursive subst
+                        char *args_sub =
+                            replace_type_str(m->func.args, "Self", node->trait.name, NULL, NULL);
+                        fprintf(out, ", %s", args_sub);
+                        free(args_sub);
                     }
                 }
                 fprintf(out, ") {\n");

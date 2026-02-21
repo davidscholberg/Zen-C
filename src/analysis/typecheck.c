@@ -233,7 +233,7 @@ static void check_expr_binary(TypeChecker *tc, ASTNode *node)
             ZenSymbol *lhs_sym = tc_lookup(tc, node->binary.left->var_ref.name);
             if (lhs_sym)
             {
-                mark_symbol_valid(lhs_sym);
+                mark_symbol_valid(tc->pctx, lhs_sym, node);
             }
         }
 
@@ -731,8 +731,32 @@ static int stmt_always_returns(ASTNode *stmt)
         return 0;
 
     case NODE_MATCH:
-        // TODO: Check all cases return and there's a default
-        return 0;
+    {
+        if (!stmt->match_stmt.cases)
+        {
+            return 0;
+        }
+
+        int has_default = 0;
+        ASTNode *case_node = stmt->match_stmt.cases;
+        while (case_node)
+        {
+            if (case_node->type == NODE_MATCH_CASE)
+            {
+                if (!stmt_always_returns(case_node->match_case.body))
+                {
+                    return 0;
+                }
+                if (case_node->match_case.is_default)
+                {
+                    has_default = 1;
+                }
+            }
+            case_node = case_node->next;
+        }
+
+        return has_default;
+    }
 
     case NODE_LOOP:
         return 0;
@@ -1345,7 +1369,26 @@ static void check_node(TypeChecker *tc, ASTNode *node)
         }
         break;
     case NODE_ASM:
-        // TODO: Implement.
+        for (int i = 0; i < node->asm_stmt.num_outputs; i++)
+        {
+            if (!tc_lookup(tc, node->asm_stmt.outputs[i]))
+            {
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Undefined output variable in inline assembly: '%s'",
+                         node->asm_stmt.outputs[i]);
+                tc_error(tc, node->token, msg);
+            }
+        }
+        for (int i = 0; i < node->asm_stmt.num_inputs; i++)
+        {
+            if (!tc_lookup(tc, node->asm_stmt.inputs[i]))
+            {
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Undefined input variable in inline assembly: '%s'",
+                         node->asm_stmt.inputs[i]);
+                tc_error(tc, node->token, msg);
+            }
+        }
         break;
     case NODE_LAMBDA:
         check_expr_lambda(tc, node);

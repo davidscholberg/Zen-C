@@ -101,6 +101,6 @@ void mark_symbol_moved(ParserContext *ctx, ZenSymbol *sym, ASTNode *context_node
  *
  * @param sym The symbol to mark.
  */
-void mark_symbol_valid(ZenSymbol *sym);
+void mark_symbol_valid(ParserContext *ctx, ZenSymbol *sym, ASTNode *context_node);
 
 #endif // MOVE_CHECK_H

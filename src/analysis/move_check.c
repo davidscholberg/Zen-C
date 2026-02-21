@@ -275,20 +275,42 @@ void mark_symbol_moved(ParserContext *ctx, ZenSymbol *sym, ASTNode *context_node
     }
 }
 
-void mark_symbol_valid(ZenSymbol *sym)
+void mark_valid_in_state(MoveState *state, const char *name, Token t)
+{
+    if (!state)
+    {
+        return;
+    }
+
+    MoveEntry *e = state->entries;
+    while (e)
+    {
+        if (strcmp(e->symbol_name, name) == 0)
+        {
+            e->status = MOVE_STATE_VALID;
+            e->moved_at = t;
+            return;
+        }
+        e = e->next;
+    }
+
+    MoveEntry *new_entry = xmalloc(sizeof(MoveEntry));
+    new_entry->symbol_name = xstrdup(name);
+    new_entry->status = MOVE_STATE_VALID;
+    new_entry->moved_at = t;
+    new_entry->next = state->entries;
+    state->entries = new_entry;
+}
+
+void mark_symbol_valid(ParserContext *ctx, ZenSymbol *sym, ASTNode *context_node)
 {
     if (sym)
     {
         sym->is_moved = 0;
-        // Optimization: In flow state, we'd need to add a "VALID" entry to mask parent "MOVED".
-        // Current implementation doesn't support masking yet (get_move_status returns first found).
-        // Since we prepend to 'entries', adding a VALID entry would mask the MOVED one in the same
-        // state. But if MOVED is in parent, we must add VALID in current.
-        // TODO: Update mark_moved_in_state to support VALID status, or separate function.
-        // For now, most re-assignments happen in fresh scopes or we can just ignore (since
-        // re-assignment is allowed). BUT strict move checking requires accurate validity. Let's
-        // implement mark_valid_in_state logic here inline or TODO.
-
-        // For now, fallback to clearing global flag.
+        if (ctx && ctx->move_state)
+        {
+            Token loc = context_node ? context_node->token : (Token){0};
+            mark_valid_in_state(ctx->move_state, sym->name, loc);
+        }
     }
 }

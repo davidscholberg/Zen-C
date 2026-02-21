@@ -3250,6 +3250,24 @@ void instantiate_generic(ParserContext *ctx, const char *tpl, const char *arg,
     }
 }
 
+static void free_field_list(ASTNode *fields)
+{
+    while (fields)
+    {
+        ASTNode *next = fields->next;
+        if (fields->field.name)
+        {
+            free(fields->field.name);
+        }
+        if (fields->field.type)
+        {
+            free(fields->field.type);
+        }
+        free(fields);
+        fields = next;
+    }
+}
+
 void instantiate_generic_multi(ParserContext *ctx, const char *tpl, char **args, int arg_count,
                                Token token)
 {
@@ -3318,22 +3336,19 @@ void instantiate_generic_multi(ParserContext *ctx, const char *tpl, char **args,
         ASTNode *fields = t->struct_node->strct.fields;
         int param_count = t->struct_node->strct.generic_param_count;
 
-        // Perform substitution for each param (simple approach: copy for first param, then replace
-        // in-place)
         if (param_count > 0 && arg_count > 0)
         {
             // First substitution
-
             i->strct.fields = copy_fields_replacing(
                 ctx, fields, t->struct_node->strct.generic_params[0], args[0]);
 
             // Subsequent substitutions (for params B, C, etc.)
             for (int j = 1; j < param_count && j < arg_count; j++)
             {
-
+                ASTNode *prev_fields = i->strct.fields;
                 ASTNode *tmp = copy_fields_replacing(
-                    ctx, i->strct.fields, t->struct_node->strct.generic_params[j], args[j]);
-                // This leaks prev fields, but that's acceptable for now, still, TODO.
+                    ctx, prev_fields, t->struct_node->strct.generic_params[j], args[j]);
+                free_field_list(prev_fields);
                 i->strct.fields = tmp;
             }
         }

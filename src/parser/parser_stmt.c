@@ -945,6 +945,7 @@ ASTNode *parse_asm(ParserContext *ctx, Lexer *l)
 
     // Create AST node
     ASTNode *n = ast_create(NODE_ASM);
+    n->token = t;
     n->asm_stmt.code = code;
     n->asm_stmt.is_volatile = is_volatile;
     n->asm_stmt.outputs = outputs;

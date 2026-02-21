@@ -661,10 +661,24 @@ void analyze_lambda_captures(ParserContext *ctx, ASTNode *lambda)
     int num_local_decls = 0;
     find_declared_vars(lambda->lambda.body, &local_decls, &num_local_decls);
 
-    char **captures = xmalloc(sizeof(char *) * 16);
-    char **capture_types = xmalloc(sizeof(char *) * 16);
-    int *capture_modes = xmalloc(sizeof(int) * 16);
+    char **captures = xmalloc(sizeof(char *) * 32);
+    char **capture_types = xmalloc(sizeof(char *) * 32);
+    int *capture_modes = xmalloc(sizeof(int) * 32);
     int num_captures = 0;
+
+    for (int i = 0; i < lambda->lambda.num_explicit_captures; i++)
+    {
+        const char *var_name = lambda->lambda.explicit_captures[i];
+        if (!is_in_list(var_name, captures, num_captures))
+        {
+            captures[num_captures] = xstrdup(var_name);
+            capture_modes[num_captures] = lambda->lambda.explicit_capture_modes[i];
+
+            Type *t = find_symbol_type_info(ctx, var_name);
+            capture_types[num_captures] = t ? type_to_string(t) : xstrdup("int");
+            num_captures++;
+        }
+    }
 
     for (int i = 0; i < num_refs; i++)
     {
@@ -793,24 +807,59 @@ ASTNode *parse_lambda(ParserContext *ctx, Lexer *l)
     lexer_next(l);
 
     int default_capture_mode = 0; // 0=Value, 1=Reference
-    // TODO: explicit capture list parsing
+    char **explicit_captures = xmalloc(sizeof(char *) * 32);
+    int *explicit_capture_modes = xmalloc(sizeof(int) * 32);
+    int num_explicit_captures = 0;
+
     if (lexer_peek(l).type == TOK_LBRACKET)
     {
         lexer_next(l); // eat [
-        if (lexer_peek(l).type == TOK_OP && lexer_peek(l).len == 1 && lexer_peek(l).start[0] == '&')
-        {
-            default_capture_mode = 1;
-            lexer_next(l);
-        }
-        else if (lexer_peek(l).type == TOK_OP && lexer_peek(l).len == 1 &&
-                 lexer_peek(l).start[0] == '=')
-        {
-            default_capture_mode = 0;
-            lexer_next(l);
-        }
 
-        // TODO: parse specific captures (e.g. [=, &x, y])
-        // For now just handle default mode
+        while (lexer_peek(l).type != TOK_RBRACKET && lexer_peek(l).type != TOK_EOF)
+        {
+            if (lexer_peek(l).type == TOK_OP && lexer_peek(l).len == 1 &&
+                lexer_peek(l).start[0] == '&')
+            {
+                lexer_next(l);
+                if (lexer_peek(l).type == TOK_IDENT)
+                {
+                    explicit_captures[num_explicit_captures] = token_strdup(lexer_peek(l));
+                    explicit_capture_modes[num_explicit_captures] = 1; // By-Reference
+                    num_explicit_captures++;
+                    lexer_next(l);
+                }
+                else
+                {
+                    default_capture_mode = 1;
+                }
+            }
+            else if (lexer_peek(l).type == TOK_OP && lexer_peek(l).len == 1 &&
+                     lexer_peek(l).start[0] == '=')
+            {
+                default_capture_mode = 0;
+                lexer_next(l);
+            }
+            else if (lexer_peek(l).type == TOK_IDENT)
+            {
+                explicit_captures[num_explicit_captures] = token_strdup(lexer_peek(l));
+                explicit_capture_modes[num_explicit_captures] = 0; // By-Value
+                num_explicit_captures++;
+                lexer_next(l);
+            }
+            else
+            {
+                zpanic_at(lexer_peek(l), "Invalid capture list item");
+            }
+
+            if (lexer_peek(l).type == TOK_COMMA)
+            {
+                lexer_next(l);
+            }
+            else
+            {
+                break;
+            }
+        }
 
         if (lexer_peek(l).type != TOK_RBRACKET)
         {
@@ -901,6 +950,9 @@ ASTNode *parse_lambda(ParserContext *ctx, Lexer *l)
     lambda->lambda.body = body;
     lambda->lambda.num_params = num_params;
     lambda->lambda.default_capture_mode = default_capture_mode;
+    lambda->lambda.explicit_captures = explicit_captures;
+    lambda->lambda.explicit_capture_modes = explicit_capture_modes;
+    lambda->lambda.num_explicit_captures = num_explicit_captures;
     lambda->lambda.capture_modes = NULL; // Will be allocated in analysis
     lambda->lambda.lambda_id = ctx->lambda_counter++;
     lambda->lambda.is_expression = 0;
