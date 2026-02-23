@@ -238,6 +238,13 @@ void scan_build_directives(ParserContext *ctx, const char *src)
             strncpy(raw_line, start, len);
             raw_line[len] = 0;
 
+            // Strip trailing \r (Windows CRLF)
+            int rlen = strlen(raw_line);
+            if (rlen > 0 && raw_line[rlen - 1] == '\r')
+            {
+                raw_line[rlen - 1] = 0;
+            }
+
             char line[2048];
             expand_env_vars(line, sizeof(line), raw_line);
 
