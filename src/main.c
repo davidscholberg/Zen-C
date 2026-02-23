@@ -143,7 +143,14 @@ int main(int argc, char **argv)
         }
         else if (strcmp(arg, "--cpp") == 0)
         {
-            strcpy(g_config.cc, "g++");
+            if (z_is_windows())
+            {
+                strcpy(g_config.cc, "g++.exe");
+            }
+            else
+            {
+                strcpy(g_config.cc, "g++");
+            }
             g_config.use_cpp = 1;
         }
         else if (strcmp(arg, "--cuda") == 0)
@@ -168,11 +175,22 @@ int main(int argc, char **argv)
                 // Handle "zig" shorthand for "zig cc"
                 if (strcmp(cc_arg, "zig") == 0)
                 {
-                    strcpy(g_config.cc, "zig cc");
+                    if (z_is_windows())
+                    {
+                        strcpy(g_config.cc, "zig.exe cc");
+                    }
+                    else
+                    {
+                        strcpy(g_config.cc, "zig cc");
+                    }
                 }
                 else
                 {
                     snprintf(g_config.cc, sizeof(g_config.cc), "%s", cc_arg);
+                    if (z_is_windows() && !strstr(g_config.cc, ".exe"))
+                    {
+                        strcat(g_config.cc, ".exe");
+                    }
                 }
             }
         }
@@ -545,7 +563,8 @@ int main(int argc, char **argv)
 
     // Compile C
     char cmd[32768];
-    char *outfile = g_config.output_file ? g_config.output_file : "a.out";
+    char *outfile =
+        g_config.output_file ? g_config.output_file : (z_is_windows() ? "a.exe" : "a.out");
 
     char extra_c_sources[4096] = {0};
     for (int i = 0; i < g_config.c_file_count; i++)
@@ -584,7 +603,16 @@ int main(int argc, char **argv)
         int n;
         if (z_is_windows())
         {
-            n = snprintf(run_cmd, sizeof(run_cmd), "%s", outfile);
+            char exe_out[1024];
+            if (!strstr(outfile, ".exe"))
+            {
+                snprintf(exe_out, sizeof(exe_out), "%s.exe", outfile);
+            }
+            else
+            {
+                snprintf(exe_out, sizeof(exe_out), "%s", outfile);
+            }
+            n = snprintf(run_cmd, sizeof(run_cmd), "%s", exe_out);
         }
         else
         {
@@ -598,17 +626,33 @@ int main(int argc, char **argv)
         }
         if (!g_config.quiet)
         {
-            printf(COLOR_BOLD COLOR_GREEN "     Running" COLOR_RESET " %s\n", outfile);
+            char exe_out[1024];
+            if (z_is_windows() && !strstr(outfile, ".exe"))
+            {
+                snprintf(exe_out, sizeof(exe_out), "%s.exe", outfile);
+            }
+            else
+            {
+                snprintf(exe_out, sizeof(exe_out), "%s", outfile);
+            }
+            printf(COLOR_BOLD COLOR_GREEN "     Running" COLOR_RESET " %s\n", exe_out);
             fflush(stdout);
         }
-        ret = system(run_cmd);
+
+        int run_ret = system(run_cmd);
         remove(outfile);
+        if (z_is_windows() && !strstr(outfile, ".exe"))
+        {
+            char exe_out[1024];
+            snprintf(exe_out, sizeof(exe_out), "%s.exe", outfile);
+            remove(exe_out);
+        }
         zptr_plugin_mgr_cleanup();
         zen_trigger_global();
 #if defined(WIFEXITED) && defined(WEXITSTATUS)
-        return WIFEXITED(ret) ? WEXITSTATUS(ret) : ret;
+        return WIFEXITED(run_ret) ? WEXITSTATUS(run_ret) : run_ret;
 #else
-        return ret;
+        return run_ret;
 #endif
     }
 
