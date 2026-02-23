@@ -155,7 +155,14 @@ int main(int argc, char **argv)
         }
         else if (strcmp(arg, "--cuda") == 0)
         {
-            strcpy(g_config.cc, "nvcc");
+            if (z_is_windows())
+            {
+                strcpy(g_config.cc, "nvcc.exe");
+            }
+            else
+            {
+                strcpy(g_config.cc, "nvcc");
+            }
             g_config.use_cuda = 1;
             g_config.use_cpp = 1; // CUDA implies C++ mode.
         }
@@ -604,7 +611,12 @@ int main(int argc, char **argv)
         if (z_is_windows())
         {
             char exe_out[1024];
-            if (!strstr(outfile, ".exe"))
+            const char *dot = strrchr(outfile, '.');
+            const char *slash = strrchr(outfile, '/');
+            const char *bslash = strrchr(outfile, '\\');
+            const char *last_sep = slash > bslash ? slash : bslash;
+
+            if (!(dot && dot > last_sep))
             {
                 snprintf(exe_out, sizeof(exe_out), "%s.exe", outfile);
             }
@@ -627,9 +639,20 @@ int main(int argc, char **argv)
         if (!g_config.quiet)
         {
             char exe_out[1024];
-            if (z_is_windows() && !strstr(outfile, ".exe"))
+            if (z_is_windows())
             {
-                snprintf(exe_out, sizeof(exe_out), "%s.exe", outfile);
+                const char *dot = strrchr(outfile, '.');
+                const char *slash = strrchr(outfile, '/');
+                const char *bslash = strrchr(outfile, '\\');
+                const char *last_sep = slash > bslash ? slash : bslash;
+                if (!(dot && dot > last_sep))
+                {
+                    snprintf(exe_out, sizeof(exe_out), "%s.exe", outfile);
+                }
+                else
+                {
+                    snprintf(exe_out, sizeof(exe_out), "%s", outfile);
+                }
             }
             else
             {
@@ -641,11 +664,18 @@ int main(int argc, char **argv)
 
         int run_ret = system(run_cmd);
         remove(outfile);
-        if (z_is_windows() && !strstr(outfile, ".exe"))
+        if (z_is_windows())
         {
-            char exe_out[1024];
-            snprintf(exe_out, sizeof(exe_out), "%s.exe", outfile);
-            remove(exe_out);
+            const char *dot = strrchr(outfile, '.');
+            const char *slash = strrchr(outfile, '/');
+            const char *bslash = strrchr(outfile, '\\');
+            const char *last_sep = slash > bslash ? slash : bslash;
+            if (!(dot && dot > last_sep))
+            {
+                char exe_out[1024];
+                snprintf(exe_out, sizeof(exe_out), "%s.exe", outfile);
+                remove(exe_out);
+            }
         }
         zptr_plugin_mgr_cleanup();
         zen_trigger_global();
