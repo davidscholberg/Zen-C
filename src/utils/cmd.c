@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "cmd.h"
 #include "colors.h"
 #include "../zprep.h"
@@ -60,54 +61,53 @@ void print_usage()
     printf("  " COLOR_CYAN "--version" COLOR_RESET "       Print version information\n");
 }
 
-void build_compile_command(char *cmd, size_t cmd_size, const char *outfile,
-                           const char *temp_source_file, const char *extra_c_sources)
+void build_compile_arg_list(ArgList *list, const char *outfile, const char *temp_source_file)
 {
-    CmdBuilder cb;
-    cmd_init(&cb);
-
     // Compiler
-    cmd_add(&cb, g_config.cc);
+    arg_list_add_from_string(list, g_config.cc);
 
     // GCC Flags
-    cmd_add(&cb, g_config.gcc_flags);
-    cmd_add(&cb, g_cflags);
+    arg_list_add_from_string(list, g_config.gcc_flags);
+    arg_list_add_from_string(list, g_cflags);
 
     // Freestanding
     if (g_config.is_freestanding)
     {
-        cmd_add(&cb, "-ffreestanding");
+        arg_list_add(list, "-ffreestanding");
     }
 
     // Quiet
     if (g_config.quiet)
     {
-        cmd_add(&cb, "-w");
+        arg_list_add(list, "-w");
     }
 
     // Output file
-    cmd_add(&cb, "-o");
-    cmd_add(&cb, outfile);
+    arg_list_add(list, "-o");
+    arg_list_add(list, outfile);
 
     // Input files
-    cmd_add(&cb, temp_source_file);
-    cmd_add(&cb, extra_c_sources);
+    arg_list_add(list, temp_source_file);
+    for (int i = 0; i < g_config.c_file_count; i++)
+    {
+        arg_list_add(list, g_config.c_files[i]);
+    }
 
     // Platform flags
     if (!z_is_windows() && !g_config.is_freestanding)
     {
-        cmd_add(&cb, "-lm");
+        arg_list_add(list, "-lm");
         if (g_parser_ctx && g_parser_ctx->has_async)
         {
-            cmd_add(&cb, "-lpthread");
+            arg_list_add(list, "-lpthread");
         }
     }
 
     // Linker flags
-    cmd_add(&cb, g_link_flags);
+    arg_list_add_from_string(list, g_link_flags);
     if (z_is_windows())
     {
-        cmd_add(&cb, "-lws2_32");
+        arg_list_add(list, "-lws2_32");
     }
 
     // Include paths
@@ -119,10 +119,10 @@ void build_compile_command(char *cmd, size_t cmd_size, const char *outfile,
 
     if (access(dev_std, F_OK) == 0)
     {
-        cmd_add_fmt(&cb, "-I\"%s\"", exe_path);
+        arg_list_add_fmt(list, "-I%s", exe_path);
         if (!g_config.is_freestanding)
         {
-            cmd_add_fmt(&cb, "-I\"%s/std/third-party/tre/include\"", exe_path);
+            arg_list_add_fmt(list, "-I%s/std/third-party/tre/include", exe_path);
         }
     }
     else
@@ -132,36 +132,21 @@ void build_compile_command(char *cmd, size_t cmd_size, const char *outfile,
 
         if (access(install_std, F_OK) == 0)
         {
-            cmd_add_fmt(&cb, "-I\"%s/../share/zenc\"", exe_path);
+            arg_list_add_fmt(list, "-I%s/../share/zenc", exe_path);
             if (!g_config.is_freestanding)
             {
-                cmd_add_fmt(&cb, "-I\"%s/../share/zenc/std/third-party/tre/include\"", exe_path);
+                arg_list_add_fmt(list, "-I%s/../share/zenc/std/third-party/tre/include", exe_path);
             }
         }
         else
         {
-            cmd_add(&cb, "-I.");
+            arg_list_add(list, "-I.");
             if (!g_config.is_freestanding)
             {
-                cmd_add(&cb, "-I./std/third-party/tre/include");
+                arg_list_add(list, "-I./std/third-party/tre/include");
             }
         }
     }
-
-    // Copy to output buffer
-    if (cb.len < cmd_size)
-    {
-        strcpy(cmd, cb.buf);
-    }
-    else
-    {
-        // Truncate if necessary (though we should avoid this)
-        strncpy(cmd, cb.buf, cmd_size - 1);
-        cmd[cmd_size - 1] = 0;
-        zwarn("Command buffer truncated!");
-    }
-
-    cmd_free(&cb);
 }
 
 void cmd_init(CmdBuilder *cmd)
@@ -247,4 +232,111 @@ void cmd_free(CmdBuilder *cmd)
 const char *cmd_to_string(CmdBuilder *cmd)
 {
     return cmd->buf;
+}
+
+void arg_list_init(ArgList *list)
+{
+    list->cap = 32;
+    list->count = 0;
+    list->args = xmalloc(list->cap * sizeof(char *));
+}
+
+void arg_list_add(ArgList *list, const char *arg)
+{
+    if (!arg)
+    {
+        return;
+    }
+    if (list->count + 1 >= list->cap)
+    {
+        list->cap *= 2;
+        list->args = xrealloc(list->args, list->cap * sizeof(char *));
+    }
+    list->args[list->count++] = xstrdup(arg);
+    list->args[list->count] = NULL;
+}
+
+void arg_list_add_fmt(ArgList *list, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    int size = vsnprintf(NULL, 0, fmt, args);
+    va_end(args);
+
+    if (size < 0)
+    {
+        return;
+    }
+
+    char *buf = xmalloc(size + 1);
+    va_start(args, fmt);
+    vsnprintf(buf, size + 1, fmt, args);
+    va_end(args);
+
+    arg_list_add(list, buf);
+    free(buf);
+}
+
+void arg_list_free(ArgList *list)
+{
+    for (size_t i = 0; i < list->count; i++)
+    {
+        free(list->args[i]);
+    }
+    free(list->args);
+    list->args = NULL;
+    list->count = 0;
+    list->cap = 0;
+}
+
+int arg_run(ArgList *list)
+{
+    return z_run_command(list->args);
+}
+
+void arg_list_add_from_string(ArgList *list, const char *str)
+{
+    if (!str || !str[0])
+    {
+        return;
+    }
+
+    const char *p = str;
+    while (*p)
+    {
+        while (*p && isspace(*p))
+        {
+            p++;
+        }
+        if (!*p)
+        {
+            break;
+        }
+
+        char arg[4096];
+        char *d = arg;
+        int in_quote = 0;
+
+        while (*p && (in_quote || !isspace(*p)))
+        {
+            if (*p == '\"')
+            {
+                in_quote = !in_quote;
+                p++;
+            }
+            else
+            {
+                if (d - arg < 4095)
+                {
+                    *d++ = *p++;
+                }
+                else
+                {
+                    p++;
+                }
+            }
+        }
+        *d = '\0';
+        arg_list_add(list, arg);
+    }
 }

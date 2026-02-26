@@ -164,4 +164,11 @@ int z_match_os(const char *os_name);
 const char *z_get_system_name(void);
 FILE *z_tmpfile(void);
 
+/**
+ * @brief Run a command securely without shell interpretation.
+ * @param argv NULL-terminated array of arguments.
+ * @return Exit code of the process.
+ */
+int z_run_command(char *const argv[]);
+
 #endif // ZC_PLATFORM_OS_H

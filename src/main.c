@@ -16,6 +16,39 @@
 // Forward decl for LSP
 int lsp_main(int argc, char **argv);
 
+static void main_append_flag(char *dest, size_t max_size, const char *prefix, const char *val)
+{
+    size_t cur_len = strlen(dest);
+    int has_space = val && strchr(val, ' ') != NULL;
+
+    if (cur_len > 0 && dest[cur_len - 1] != ' ')
+    {
+        strncat(dest, " ", max_size - cur_len - 1);
+        cur_len++;
+    }
+
+    if (prefix)
+    {
+        strncat(dest, prefix, max_size - cur_len - 1);
+        cur_len = strlen(dest);
+    }
+
+    if (val)
+    {
+        if (has_space)
+        {
+            strncat(dest, "\"", max_size - cur_len - 1);
+            cur_len++;
+        }
+        strncat(dest, val, max_size - cur_len - 1);
+        cur_len = strlen(dest);
+        if (has_space)
+        {
+            strncat(dest, "\"", max_size - cur_len - 1);
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     memset(&g_config, 0, sizeof(g_config));
@@ -220,55 +253,41 @@ int main(int argc, char **argv)
         }
         else if (strncmp(arg, "-I", 2) == 0)
         {
-            strcat(g_config.gcc_flags, " -I");
             if (strlen(arg) > 2)
             {
-                strcat(g_config.gcc_flags, arg + 2);
+                main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), "-I", arg + 2);
             }
             else if (i + 1 < argc)
             {
-                strcat(g_config.gcc_flags, argv[++i]);
+                main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), "-I", argv[++i]);
             }
         }
         else if (strncmp(arg, "-L", 2) == 0 || strncmp(arg, "-l", 2) == 0)
         {
             char prefix[3] = {arg[0], arg[1], '\0'};
-            if (strlen(g_link_flags) > 0)
-            {
-                strcat(g_link_flags, " ");
-            }
-            strcat(g_link_flags, prefix);
-
             if (strlen(arg) > 2)
             {
-                strcat(g_link_flags, arg + 2);
+                main_append_flag(g_link_flags, MAX_FLAGS_SIZE, prefix, arg + 2);
             }
             else if (i + 1 < argc)
             {
-                strcat(g_link_flags, argv[++i]);
+                main_append_flag(g_link_flags, MAX_FLAGS_SIZE, prefix, argv[++i]);
             }
         }
         else if (strncmp(arg, "-O", 2) == 0)
         {
-            // Add to CFLAGS
-            size_t len = strlen(g_config.gcc_flags);
-            snprintf(g_config.gcc_flags + len, sizeof(g_config.gcc_flags) - len, " -O");
             if (strlen(arg) > 2)
             {
-                len = strlen(g_config.gcc_flags);
-                snprintf(g_config.gcc_flags + len, sizeof(g_config.gcc_flags) - len, "%s", arg + 2);
+                main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), "-O", arg + 2);
             }
             else if (i + 1 < argc)
             {
-                len = strlen(g_config.gcc_flags);
-                snprintf(g_config.gcc_flags + len, sizeof(g_config.gcc_flags) - len, "%s",
-                         argv[++i]);
+                main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), "-O", argv[++i]);
             }
         }
         else if (strcmp(arg, "-g") == 0)
         {
-            size_t len = strlen(g_config.gcc_flags);
-            snprintf(g_config.gcc_flags + len, sizeof(g_config.gcc_flags) - len, " -g");
+            main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), "-g", NULL);
         }
         else if (strncmp(arg, "-D", 2) == 0)
         {
@@ -288,15 +307,12 @@ int main(int argc, char **argv)
                 }
                 g_config.cfg_defines[g_config.cfg_define_count++] = name;
             }
-            size_t len = strlen(g_config.gcc_flags);
-            snprintf(g_config.gcc_flags + len, sizeof(g_config.gcc_flags) - len, " -D%s",
-                     def ? def : "");
+            main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), "-D", def);
         }
         else if (arg[0] == '-')
         {
             // Unknown flag or C flag
-            size_t len = strlen(g_config.gcc_flags);
-            snprintf(g_config.gcc_flags + len, sizeof(g_config.gcc_flags) - len, " %s", arg);
+            main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), arg, NULL);
         }
         else
         {
@@ -570,26 +586,28 @@ int main(int argc, char **argv)
     }
 
     // Compile C
-    char cmd[32768];
     char *outfile =
         g_config.output_file ? g_config.output_file : (z_is_windows() ? "a.exe" : "a.out");
 
-    char extra_c_sources[4096] = {0};
-    for (int i = 0; i < g_config.c_file_count; i++)
-    {
-        size_t len = strlen(extra_c_sources);
-        snprintf(extra_c_sources + len, sizeof(extra_c_sources) - len, " %s", g_config.c_files[i]);
-    }
+    ArgList compile_args;
+    arg_list_init(&compile_args);
 
     // Build command
-    build_compile_command(cmd, sizeof(cmd), outfile, temp_source_file, extra_c_sources);
+    build_compile_arg_list(&compile_args, outfile, temp_source_file);
 
     if (g_config.verbose)
     {
-        printf(COLOR_BOLD COLOR_BLUE "     Command" COLOR_RESET " %s\n", cmd);
+        printf(COLOR_BOLD COLOR_BLUE "     Command" COLOR_RESET);
+        for (size_t i = 0; i < compile_args.count; i++)
+        {
+            printf(" %s", compile_args.args[i]);
+        }
+        printf("\n");
     }
 
-    int ret = system(cmd);
+    int ret = arg_run(&compile_args);
+    arg_list_free(&compile_args);
+
     if (ret != 0)
     {
         fprintf(stderr, COLOR_BOLD COLOR_RED "error" COLOR_RESET ": C compilation failed\n");
@@ -607,8 +625,9 @@ int main(int argc, char **argv)
 
     if (g_config.mode_run)
     {
-        char run_cmd[2048];
-        int n;
+        ArgList run_args;
+        arg_list_init(&run_args);
+
         if (z_is_windows())
         {
             char exe_out[1024];
@@ -625,45 +644,24 @@ int main(int argc, char **argv)
             {
                 snprintf(exe_out, sizeof(exe_out), "%s", outfile);
             }
-            n = snprintf(run_cmd, sizeof(run_cmd), "%s", exe_out);
+            arg_list_add(&run_args, exe_out);
         }
         else
         {
-            n = snprintf(run_cmd, sizeof(run_cmd), "./%s", outfile);
+            char exe_out[1024];
+            snprintf(exe_out, sizeof(exe_out), "./%s", outfile);
+            arg_list_add(&run_args, exe_out);
         }
 
-        if (n < 0 || n >= (int)sizeof(run_cmd))
-        {
-            fprintf(stderr, COLOR_BOLD COLOR_RED "error" COLOR_RESET ": run command too long\n");
-            return 1;
-        }
         if (!g_config.quiet)
         {
-            char exe_out[1024];
-            if (z_is_windows())
-            {
-                const char *dot = strrchr(outfile, '.');
-                const char *slash = strrchr(outfile, '/');
-                const char *bslash = strrchr(outfile, '\\');
-                const char *last_sep = slash > bslash ? slash : bslash;
-                if (!(dot && dot > last_sep))
-                {
-                    snprintf(exe_out, sizeof(exe_out), "%s.exe", outfile);
-                }
-                else
-                {
-                    snprintf(exe_out, sizeof(exe_out), "%s", outfile);
-                }
-            }
-            else
-            {
-                snprintf(exe_out, sizeof(exe_out), "%s", outfile);
-            }
-            printf(COLOR_BOLD COLOR_GREEN "     Running" COLOR_RESET " %s\n", exe_out);
+            printf(COLOR_BOLD COLOR_GREEN "     Running" COLOR_RESET " %s\n", run_args.args[0]);
             fflush(stdout);
         }
 
-        int run_ret = system(run_cmd);
+        int run_ret = arg_run(&run_args);
+        arg_list_free(&run_args);
+
         remove(outfile);
         if (z_is_windows())
         {

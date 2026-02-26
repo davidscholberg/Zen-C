@@ -10,6 +10,13 @@ typedef struct
     size_t cap;
 } CmdBuilder;
 
+typedef struct
+{
+    char **args;
+    size_t count;
+    size_t cap;
+} ArgList;
+
 /**
  * @brief Initialize a new command builder
  * @param cmd The command builder to initialize
@@ -60,9 +67,46 @@ void print_version();
 void print_usage();
 
 /**
- * @brief Build backend compiler invocation string
+ * @brief Initialize a new argument list
+ * @param list The list to initialize
  */
-void build_compile_command(char *cmd, size_t cmd_size, const char *outfile,
-                           const char *temp_source_file, const char *extra_c_sources);
+void arg_list_init(ArgList *list);
+
+/**
+ * @brief Add an argument to the list
+ * @param list The list to add to
+ * @param arg The argument to add (will be duplicated)
+ */
+void arg_list_add(ArgList *list, const char *arg);
+
+/**
+ * @brief Add a formatted argument to the list
+ * @param list The list to add to
+ * @param fmt The format string
+ * @param ... The arguments to format
+ */
+void arg_list_add_fmt(ArgList *list, const char *fmt, ...);
+
+/**
+ * @brief Free the argument list
+ * @param list The list to free
+ */
+void arg_list_free(ArgList *list);
+
+/**
+ * @brief Run the argument list securely
+ * @param list The list to run
+ * @return Exit code
+ */
+int arg_run(ArgList *list);
+
+/**
+ * @brief Add arguments from a space-separated string to the list
+ * @param list The list to add to
+ * @param str The string to parse
+ */
+void arg_list_add_from_string(ArgList *list, const char *str);
+
+void build_compile_arg_list(ArgList *list, const char *outfile, const char *temp_source_file);
 
 #endif

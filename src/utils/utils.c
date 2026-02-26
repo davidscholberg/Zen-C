@@ -140,7 +140,9 @@ CompilerConfig g_config = {0};
 static void append_flag(char *dest, size_t max_size, const char *flag)
 {
     size_t current_len = strlen(dest);
-    size_t flag_len = strlen(flag);
+    int has_space = strchr(flag, ' ') != NULL;
+    size_t flag_len = strlen(flag) + (has_space ? 2 : 0);
+
     if (current_len > 0)
     {
         if (current_len + flag_len + 2 >= max_size)
@@ -149,7 +151,15 @@ static void append_flag(char *dest, size_t max_size, const char *flag)
             return;
         }
         strcat(dest, " ");
+        if (has_space)
+        {
+            strcat(dest, "\"");
+        }
         strcat(dest, flag);
+        if (has_space)
+        {
+            strcat(dest, "\"");
+        }
     }
     else
     {
@@ -158,7 +168,15 @@ static void append_flag(char *dest, size_t max_size, const char *flag)
             zwarn("Build flags buffer overflow prevented.");
             return;
         }
+        if (has_space)
+        {
+            strcat(dest, "\"");
+        }
         strcat(dest, flag);
+        if (has_space)
+        {
+            strcat(dest, "\"");
+        }
     }
 }
 

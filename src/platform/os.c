@@ -12,6 +12,7 @@
 #else
 #include <unistd.h>
 #include <time.h>
+#include <sys/wait.h>
 #endif
 
 void z_setup_terminal(void)
@@ -237,5 +238,108 @@ FILE *z_tmpfile(void)
     return f;
 #else
     return tmpfile();
+#endif
+}
+
+#ifdef _WIN32
+static char *quote_arg(const char *arg)
+{
+    if (!strpbrk(arg, " \t\n\v\""))
+    {
+        return strdup(arg);
+    }
+
+    size_t len = strlen(arg);
+    size_t new_len = len + 3;
+    for (size_t i = 0; i < len; i++)
+    {
+        if (arg[i] == '\"')
+        {
+            new_len++;
+        }
+    }
+
+    char *result = malloc(new_len);
+    char *p = result;
+    *p++ = '\"';
+    for (size_t i = 0; i < len; i++)
+    {
+        if (arg[i] == '\"')
+        {
+            *p++ = '\\';
+        }
+        *p++ = arg[i];
+    }
+    *p++ = '\"';
+    *p = '\0';
+    return result;
+}
+#endif
+
+int z_run_command(char *const argv[])
+{
+#ifdef _WIN32
+    size_t cmd_len = 0;
+    for (int i = 0; argv[i]; i++)
+    {
+        char *q = quote_arg(argv[i]);
+        cmd_len += strlen(q) + 1;
+        free(q);
+    }
+
+    char *cmd_line = malloc(cmd_len + 1);
+    cmd_line[0] = '\0';
+    for (int i = 0; argv[i]; i++)
+    {
+        char *q = quote_arg(argv[i]);
+        strcat(cmd_line, q);
+        if (argv[i + 1])
+        {
+            strcat(cmd_line, " ");
+        }
+        free(q);
+    }
+
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+
+    if (!CreateProcessA(NULL, cmd_line, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi))
+    {
+        free(cmd_line);
+        return -1;
+    }
+
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD exit_code;
+    GetExitCodeProcess(pi.hProcess, &exit_code);
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    free(cmd_line);
+    return (int)exit_code;
+#else
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        execvp(argv[0], argv);
+        exit(127);
+    }
+    else if (pid < 0)
+    {
+        return -1;
+    }
+    else
+    {
+        int status;
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status))
+        {
+            return WEXITSTATUS(status);
+        }
+        return -1;
+    }
 #endif
 }
