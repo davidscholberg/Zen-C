@@ -271,7 +271,7 @@ char *ast_to_string(ASTNode *node)
     case NODE_EXPR_CALL:
     {
         char *callee = ast_to_string(node->call.callee);
-        sprintf(buf, "%s(", callee);
+        snprintf(buf, 256, "%s(", callee);
         free(callee);
 
         ASTNode *arg = node->call.args;
@@ -1476,8 +1476,9 @@ char *replace_type_str(const char *src, const char *param, const char *concrete,
 
     if (old_struct && new_struct && param)
     {
-        char *mangled = xmalloc(strlen(old_struct) + strlen(param) + 2);
-        sprintf(mangled, "%s_%s", old_struct, param);
+        int size = strlen(old_struct) + strlen(param) + 2;
+        char *mangled = xmalloc(size);
+        snprintf(mangled, size, "%s_%s", old_struct, param);
         if (strcmp(src, mangled) == 0)
         {
             free(mangled);
@@ -3041,11 +3042,11 @@ void instantiate_methods(ParserContext *ctx, GenericImplTemplate *it,
                     (delim == '_' || delim == '<'))
                 {
                     // Found matching template prefix
-                    const char *arg = meth->func.ret_type + tlen + 1;
+                    const char *type_arg = meth->func.ret_type + tlen + 1;
 
                     // Simple approach: instantiate 'Template' with 'Arg'.
                     // If delimited by <, we need to extract the inside.
-                    char *clean_arg = xstrdup(arg);
+                    char *clean_arg = xstrdup(type_arg);
                     if (delim == '<')
                     {
                         char *closer = strrchr(clean_arg, '>');
@@ -3056,27 +3057,27 @@ void instantiate_methods(ParserContext *ctx, GenericImplTemplate *it,
                     }
 
                     // Unmangle Ptr suffix if present (e.g., intPtr -> int*)
-                    char *unmangled_arg = xstrdup(clean_arg);
+                    char *inner_unmangled_arg = xstrdup(clean_arg);
                     size_t alen = strlen(clean_arg);
                     if (alen > 3 && strcmp(clean_arg + alen - 3, "Ptr") == 0)
                     {
                         char *base = xstrdup(clean_arg);
                         base[alen - 3] = '\0';
-                        free(unmangled_arg);
-                        unmangled_arg = xmalloc(strlen(base) + 16);
+                        free(inner_unmangled_arg);
+                        inner_unmangled_arg = xmalloc(strlen(base) + 16);
                         // Check if base is a primitive type
                         if (is_unmangle_primitive(base))
                         {
-                            sprintf(unmangled_arg, "%s*", base);
+                            sprintf(inner_unmangled_arg, "%s*", base);
                         }
                         else
                         {
-                            sprintf(unmangled_arg, "struct %s*", base);
+                            sprintf(inner_unmangled_arg, "struct %s*", base);
                         }
                         free(base);
                     }
 
-                    instantiate_generic(ctx, gt->name, clean_arg, unmangled_arg, meth->token);
+                    instantiate_generic(ctx, gt->name, clean_arg, inner_unmangled_arg, meth->token);
                     free(unmangled_arg);
                     free(clean_arg);
                 }
@@ -3584,18 +3585,19 @@ char *rewrite_expr_methods(ParserContext *ctx, char *raw)
                 if (!find_func(ctx, target_func))
                 {
                     // Not found, check mixins
-                    ASTNode *def = find_struct_def(ctx, ptr_check);
-                    if (def && def->type == NODE_STRUCT && def->strct.used_structs)
+                    ASTNode *mixin_def = find_struct_def(ctx, ptr_check);
+                    if (mixin_def && mixin_def->type == NODE_STRUCT &&
+                        mixin_def->strct.used_structs)
                     {
-                        for (int k = 0; k < def->strct.used_struct_count; k++)
+                        for (int k = 0; k < mixin_def->strct.used_struct_count; k++)
                         {
                             char mixin_func[128];
-                            sprintf(mixin_func, "%s__%s", def->strct.used_structs[k], method);
+                            sprintf(mixin_func, "%s__%s", mixin_def->strct.used_structs[k], method);
                             if (find_func(ctx, mixin_func))
                             {
                                 // Found in mixin!
                                 free(final_struct);
-                                final_struct = xstrdup(def->strct.used_structs[k]);
+                                final_struct = xstrdup(mixin_def->strct.used_structs[k]);
 
                                 // Create cast string: (Mixin*) or (Mixin*)&
                                 char cast_buf[128];
@@ -3690,18 +3692,19 @@ char *rewrite_expr_methods(ParserContext *ctx, char *raw)
                 if (!find_func(ctx, target_func))
                 {
                     // Not found, check mixins
-                    ASTNode *def = find_struct_def(ctx, ptr_check);
-                    if (def && def->type == NODE_STRUCT && def->strct.used_structs)
+                    ASTNode *mixin_def = find_struct_def(ctx, ptr_check);
+                    if (mixin_def && mixin_def->type == NODE_STRUCT &&
+                        mixin_def->strct.used_structs)
                     {
-                        for (int k = 0; k < def->strct.used_struct_count; k++)
+                        for (int k = 0; k < mixin_def->strct.used_struct_count; k++)
                         {
                             char mixin_func[128];
-                            sprintf(mixin_func, "%s__%s", def->strct.used_structs[k], method);
+                            sprintf(mixin_func, "%s__%s", mixin_def->strct.used_structs[k], method);
                             if (find_func(ctx, mixin_func))
                             {
                                 // Found in mixin!
                                 free(final_struct);
-                                final_struct = xstrdup(def->strct.used_structs[k]);
+                                final_struct = xstrdup(mixin_def->strct.used_structs[k]);
 
                                 // Create cast string: (Mixin*) or (Mixin*)&
                                 char cast_buf[128];
@@ -4000,9 +4003,10 @@ char *parse_and_convert_args(ParserContext *ctx, Lexer *l, char ***defaults_out,
                 }
             }
 
-            Token t = lexer_next(l);
+            Token param_tok = lexer_next(l);
             // Handle 'self'
-            if (t.type == TOK_IDENT && strncmp(t.start, "self", 4) == 0 && t.len == 4)
+            if (param_tok.type == TOK_IDENT && strncmp(param_tok.start, "self", 4) == 0 &&
+                param_tok.len == 4)
             {
                 names[count] = xstrdup("self");
                 if (ctx->current_impl_struct)
@@ -4123,11 +4127,11 @@ char *parse_and_convert_args(ParserContext *ctx, Lexer *l, char ***defaults_out,
             }
             else
             {
-                if (t.type != TOK_IDENT)
+                if (param_tok.type != TOK_IDENT)
                 {
                     zpanic_at(lexer_peek(l), "Expected arg name");
                 }
-                char *name = token_strdup(t);
+                char *name = token_strdup(param_tok);
                 names[count] = name; // Store name
                 if (lexer_next(l).type != TOK_COLON)
                 {

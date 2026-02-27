@@ -502,16 +502,17 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
             {
                 // Check if this trait was already in kids (explicitly imported)
                 int already_in_kids = 0;
-                ASTNode *k = kids;
-                while (k)
+                ASTNode *k_inner = kids;
+                while (k_inner)
                 {
-                    if (k->type == NODE_TRAIT && k->trait.name && trait_ref->node->trait.name &&
-                        strcmp(k->trait.name, trait_ref->node->trait.name) == 0)
+                    if (k_inner->type == NODE_TRAIT && k_inner->trait.name &&
+                        trait_ref->node->trait.name &&
+                        strcmp(k_inner->trait.name, trait_ref->node->trait.name) == 0)
                     {
                         already_in_kids = 1;
                         break;
                     }
-                    k = k->next;
+                    k_inner = k_inner->next;
                 }
 
                 if (!already_in_kids)

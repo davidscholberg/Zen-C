@@ -657,9 +657,11 @@ Zen C ti permette di utilizzare stringhe letterali direttamente come istruzione 
 | `!"Errore"` | `eprintln "Errore"` | Output a stderr. |
 | `!"Errore"..` | `eprint "Errore"` | Output a stderr, senza newline. |
 
-#### Interpolazione delle Stringhe (F-strings)
+#### Interpolazione delle Stringhe
 
 Puoi incorporare espressioni direttamente all'interno di stringhe letterali utilizzando la sintassi `{}`. Questo funziona con tutti i metodi di stampaggio, incluse le scorciatoie.
+
+L'interpolazione di stringhe in Zen C è **implicita**: se la tua stringa contiene `{...}`, verrà analizzata automaticamente come una stringa interpolata. Puoi anche usare esplicitamente il prefisso `f` (es. `f"..."`) per forzare la semantica di interpolazione.
 
 ```zc
 let x = 42;
@@ -673,6 +675,39 @@ println "Valore: {x}, Nome: {name}";
 ```zc
 let json = "JSON: {{\"chiave\": \"valore\"}}";
 // Output: JSON: {"chiave": "valore"}
+```
+
+**Stringhe Grezze (Raw Strings)**: Per definire una stringa in cui le sequenze di interpolazione e di escape vengono completamente ignorate, inserici il prefisso `r` (es. `r"..."`):
+
+```zc
+let regex = r"\w+"; // Contiene esattamente \ w +
+let raw_json = r'{"chiave": "valore"}'; // Non è necessario l'escape delle parentesi
+```
+
+#### Stringhe Multilinea
+
+Zen C supporta blocchi di stringhe multilinea grezzi utilizzando il delimitatore `"""`. Questo è estremamente utile per la scrittura di linguaggi incorporati (GLSL, HTML) o per la generazione di codice C all'interno di blocchi `comptime` senza il bisogno di inserire manualmente l'escape a capo ed alle virgolette all'interno.
+
+Come le stringhe standard, le stringhe multilinea supportano l'**interpolazione implicita**. Puoi aggiugere l'escape in maniera esplicita usando:
+- `f"""..."""`: Contrassegna in modo esplicito un blocco di stringa interpolato.
+- `r"""..."""`: Contrassegna in modo esplicito un blocco di stringa grezzo (nessuna interpolazione, nessuna sequenza di escape).
+
+```zc
+let prompt = """
+  Per favore, inserisci il tuo nome:
+  Digita "exit" per annullare.
+""";
+
+let mondo = "mondo";
+let script = """
+  fn ciao() {
+      println "ciao, {mondo}!";
+  }
+""";
+
+let pure_raw = r"""
+  Qui le {parentesi} sono solo testo, e \n e' letteralmente barra ed n.
+""";
 ```
 
 #### Prompt di Input (`?`)

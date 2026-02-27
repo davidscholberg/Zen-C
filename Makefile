@@ -21,7 +21,7 @@ endif
 # To build with zig:   make CC="zig cc"
 # Version synchronization
 GIT_VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "0.1.0")
-CFLAGS = -Wall -Wextra -g -I./src -I./src/ast -I./src/parser -I./src/codegen -I./plugins -I./src/zen -I./src/utils -I./src/lexer -I./src/analysis -I./src/lsp -I./src/diagnostics -I./std/third-party/tre/include -DZEN_VERSION=\"$(GIT_VERSION)\" -DZEN_SHARE_DIR=\"$(SHAREDIR)\"
+CFLAGS = -Wall -Wextra -Wshadow -g -I./src -I./src/ast -I./src/parser -I./src/codegen -I./plugins -I./src/zen -I./src/utils -I./src/lexer -I./src/analysis -I./src/lsp -I./src/diagnostics -I./std/third-party/tre/include -DZEN_VERSION=\"$(GIT_VERSION)\" -DZEN_SHARE_DIR=\"$(SHAREDIR)\"
 TARGET = zc$(EXE)
 ifeq ($(OS),Windows_NT)
     LIBS = -lws2_32
@@ -246,4 +246,13 @@ clang:
 windows:
 	$(MAKE) CC="x86_64-w64-mingw32-gcc" TARGET="zc.exe" UI_OS="Windows" LIBS="-static -lm -lpthread"
 
-.PHONY: all clean install uninstall install-ape uninstall-ape test zig clang ape windows
+asan: CFLAGS += -fsanitize=address,undefined -O1 -fno-omit-frame-pointer
+asan: LIBS += -fsanitize=address,undefined
+asan: $(TARGET) $(PLUGINS)
+
+test-asan: clean asan
+	ASAN_OPTIONS=detect_leaks=0 ./tests/scripts/run_tests.sh
+	ASAN_OPTIONS=detect_leaks=0 ./tests/scripts/run_codegen_tests.sh
+	ASAN_OPTIONS=detect_leaks=0 ./tests/scripts/run_example_transpile.sh
+
+.PHONY: all clean install uninstall install-ape uninstall-ape test zig clang ape windows asan test-asan

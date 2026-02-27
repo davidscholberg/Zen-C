@@ -72,14 +72,24 @@ FloatSuffix  ::= "f"
 
 ```text
 StringLiteral ::= '"' StringChar* '"'
+                | '"""' StringChar* '"""'
+                
 StringChar    ::= ~["\\] | EscapeSequence
 EscapeSequence ::= "\\" ( ["\\/bfnrt] | "u" HexDigit{4} )
 ```
 
-### F-Strings
+### Interpolated Strings (F-Strings)
 
 ```text
 FStringLiteral ::= 'f"' StringChar* '"'
+                 | 'f"""' StringChar* '"""'
+```
+
+### Raw Strings
+
+```text
+RawStringLiteral ::= 'r"' ~["]* '"'
+                   | 'r"""' ~["]* '"""'
 ```
 
 

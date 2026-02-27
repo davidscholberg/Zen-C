@@ -1739,20 +1739,21 @@ void run_repl(const char *self_path)
                         }
 
                         // Generate probe code to print values
-                        char *global_code = NULL;
-                        char *main_code = NULL;
-                        repl_get_code(history, history_len, &global_code, &main_code);
+                        char *probe_global_code = NULL;
+                        char *probe_main_code = NULL;
+                        repl_get_code(history, history_len, &probe_global_code, &probe_main_code);
 
                         // Generate probe code to print values
-                        size_t probe_size = strlen(global_code) + strlen(main_code) + 4096;
+                        size_t probe_size =
+                            strlen(probe_global_code) + strlen(probe_main_code) + 4096;
                         char *probe_code = malloc(probe_size);
 
                         sprintf(probe_code,
                                 "%s\nfn main() { _z_suppress_stdout(); %s _z_restore_stdout(); "
                                 "printf(\"Variables:\\n\"); ",
-                                global_code, main_code);
-                        free(global_code);
-                        free(main_code);
+                                probe_global_code, probe_main_code);
+                        free(probe_global_code);
+                        free(probe_main_code);
 
                         int found_vars = 0;
                         if (main_func && main_func->func.body &&
@@ -2085,22 +2086,22 @@ void run_repl(const char *self_path)
                     char *expr_buf = malloc(8192);
                     strcpy(expr_buf, cmd_buf + 3);
 
-                    int brace_depth = 0;
+                    int cmd_brace_depth = 0;
                     for (char *p = expr_buf; *p; p++)
                     {
                         if (*p == '{')
                         {
-                            brace_depth++;
+                            cmd_brace_depth++;
                         }
                         else if (*p == '}')
                         {
-                            brace_depth--;
+                            cmd_brace_depth--;
                         }
                     }
 
-                    while (brace_depth > 0)
+                    while (cmd_brace_depth > 0)
                     {
-                        char *more = repl_readline("... ", history, history_len, brace_depth);
+                        char *more = repl_readline("... ", history, history_len, cmd_brace_depth);
                         if (!more)
                         {
                             break;
@@ -2111,11 +2112,11 @@ void run_repl(const char *self_path)
                         {
                             if (*p == '{')
                             {
-                                brace_depth++;
+                                cmd_brace_depth++;
                             }
                             else if (*p == '}')
                             {
-                                brace_depth--;
+                                cmd_brace_depth--;
                             }
                         }
                         free(more);
@@ -2394,18 +2395,18 @@ void run_repl(const char *self_path)
 
                 if (is_expr)
                 {
-                    char *global_code = NULL;
-                    char *main_code = NULL;
-                    repl_get_code(history, history_len - 1, &global_code, &main_code);
+                    char *probe_global_code = NULL;
+                    char *probe_main_code = NULL;
+                    repl_get_code(history, history_len - 1, &probe_global_code, &probe_main_code);
 
-                    size_t probesz =
-                        strlen(global_code) + strlen(main_code) + strlen(last_line) + 4096;
+                    size_t probesz = strlen(probe_global_code) + strlen(probe_main_code) +
+                                     strlen(last_line) + 4096;
                     char *probe_code = malloc(probesz);
 
-                    sprintf(probe_code, "%s\nfn main() { _z_suppress_stdout(); %s", global_code,
-                            main_code);
-                    free(global_code);
-                    free(main_code);
+                    sprintf(probe_code, "%s\nfn main() { _z_suppress_stdout(); %s",
+                            probe_global_code, probe_main_code);
+                    free(probe_global_code);
+                    free(probe_main_code);
 
                     strcat(probe_code, " raw { typedef struct { int _u; } __REVEAL_TYPE__; } ");
                     strcat(probe_code, " var _z_type_probe: __REVEAL_TYPE__; _z_type_probe = (");

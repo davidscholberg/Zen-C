@@ -244,33 +244,70 @@ Token lexer_next(Lexer *l)
 
     if (s[0] == 'f' && s[1] == '"')
     {
-        int len = 2;
-        while (s[len] && s[len] != '"')
+        int is_multi = (s[2] == '"' && s[3] == '"');
+        int len = is_multi ? 4 : 2;
+        while (s[len])
         {
-            if (s[len] == '\\')
+            if (is_multi && s[len] == '"' && s[len + 1] == '"' && s[len + 2] == '"')
+            {
+                break;
+            }
+            else if (!is_multi && s[len] == '"')
+            {
+                break;
+            }
+
+            if (s[len] == '\\' && !is_multi)
             {
                 len++;
             }
             len++;
         }
-        if (s[len] == '"')
+        if (is_multi && s[len] == '"' && s[len + 1] == '"' && s[len + 2] == '"')
+        {
+            len += 3;
+        }
+        else if (!is_multi && s[len] == '"')
         {
             len++;
         }
+
+        for (int i = 0; i < len; i++)
+        {
+            if (s[i] == '\n')
+            {
+                l->line++;
+                l->col = 1;
+            }
+            else
+            {
+                l->col++;
+            }
+        }
         l->pos += len;
-        l->col += len;
         return (Token){TOK_FSTRING, s, len, start_line, start_col};
     }
 
-    // Raw Strings (r"..." or r'...')
+    // Raw Strings (r"..." or r'...' or r"""...""")
     if (s[0] == 'r' && (s[1] == '"' || s[1] == '\''))
     {
         char quote = s[1];
-        int len = 2;
+        int is_multi = (quote == '"' && s[2] == '"' && s[3] == '"');
+        int len = is_multi ? 4 : 2;
+
         // In raw strings, only escape the quote itself
-        while (s[len] && s[len] != quote)
+        while (s[len])
         {
-            if (s[len] == '\\' && s[len + 1] == quote)
+            if (is_multi && s[len] == '"' && s[len + 1] == '"' && s[len + 2] == '"')
+            {
+                break;
+            }
+            else if (!is_multi && s[len] == quote)
+            {
+                break;
+            }
+
+            if (s[len] == '\\' && s[len + 1] == quote && !is_multi)
             {
                 len += 2; // Skip escaped quote
             }
@@ -279,12 +316,28 @@ Token lexer_next(Lexer *l)
                 len++;
             }
         }
-        if (s[len] == quote)
+        if (is_multi && s[len] == '"' && s[len + 1] == '"' && s[len + 2] == '"')
+        {
+            len += 3;
+        }
+        else if (!is_multi && s[len] == quote)
         {
             len++;
         }
+
+        for (int i = 0; i < len; i++)
+        {
+            if (s[i] == '\n')
+            {
+                l->line++;
+                l->col = 1;
+            }
+            else
+            {
+                l->col++;
+            }
+        }
         l->pos += len;
-        l->col += len;
         return (Token){TOK_RAW_STRING, s, len, start_line, start_col};
     }
 
@@ -392,21 +445,47 @@ Token lexer_next(Lexer *l)
     // Strings
     if (*s == '"')
     {
-        int len = 1;
-        while (s[len] && s[len] != '"')
+        int is_multi = (s[1] == '"' && s[2] == '"');
+        int len = is_multi ? 3 : 1;
+        while (s[len])
         {
-            if (s[len] == '\\')
+            if (is_multi && s[len] == '"' && s[len + 1] == '"' && s[len + 2] == '"')
+            {
+                break;
+            }
+            else if (!is_multi && s[len] == '"')
+            {
+                break;
+            }
+
+            if (s[len] == '\\' && !is_multi)
             {
                 len++;
             }
             len++;
         }
-        if (s[len] == '"')
+        if (is_multi && s[len] == '"' && s[len + 1] == '"' && s[len + 2] == '"')
+        {
+            len += 3;
+        }
+        else if (!is_multi && s[len] == '"')
         {
             len++;
         }
+
+        for (int i = 0; i < len; i++)
+        {
+            if (s[i] == '\n')
+            {
+                l->line++;
+                l->col = 1;
+            }
+            else
+            {
+                l->col++;
+            }
+        }
         l->pos += len;
-        l->col += len;
         return (Token){TOK_STRING, s, len, start_line, start_col};
     }
 

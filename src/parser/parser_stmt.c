@@ -368,9 +368,9 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
                     while (v)
                     {
                         // Match by variant name (pattern suffix after last _)
-                        char *v_full =
-                            xmalloc(strlen(vreg->enum_name) + strlen(v->variant.name) + 2);
-                        sprintf(v_full, "%s_%s", vreg->enum_name, v->variant.name);
+                        int size = strlen(vreg->enum_name) + strlen(v->variant.name) + 2;
+                        char *v_full = xmalloc(size);
+                        snprintf(v_full, size, "%s_%s", vreg->enum_name, v->variant.name);
                         if (strcmp(v_full, pattern) == 0 && v->variant.payload)
                         {
                             // Found the variant, extract payload type
@@ -649,39 +649,39 @@ ASTNode *parse_asm(ParserContext *ctx, Lexer *l)
 
     while (1)
     {
-        Token t = lexer_peek(l);
+        Token inner_t = lexer_peek(l);
 
         // Check for end of asm block or start of operands
-        if (t.type == TOK_RBRACE)
+        if (inner_t.type == TOK_RBRACE)
         {
             break;
         }
-        if (t.type == TOK_COLON)
+        if (inner_t.type == TOK_COLON)
         {
             break;
         }
 
         // Support string literals for assembly instructions
-        if (t.type == TOK_STRING)
+        if (inner_t.type == TOK_STRING)
         {
             lexer_next(l);
             // Extract string content (strip quotes)
-            int str_len = t.len - 2;
+            int str_len = inner_t.len - 2;
             if (strlen(code) > 0)
             {
                 strcat(code, "\n");
             }
-            strncat(code, t.start + 1, str_len);
+            strncat(code, inner_t.start + 1, str_len);
         }
         // Also support bare identifiers for simple instructions like 'nop', 'pause'
-        else if (t.type == TOK_IDENT)
+        else if (inner_t.type == TOK_IDENT)
         {
             lexer_next(l);
             if (strlen(code) > 0)
             {
                 strcat(code, "\n");
             }
-            strncat(code, t.start, t.len);
+            strncat(code, inner_t.start, inner_t.len);
 
             // Check for instruction arguments
             while (lexer_peek(l).type != TOK_RBRACE && lexer_peek(l).type != TOK_COLON)
@@ -776,21 +776,21 @@ ASTNode *parse_asm(ParserContext *ctx, Lexer *l)
 
         while (1)
         {
-            Token t = lexer_peek(l);
-            if (t.type == TOK_COLON || t.type == TOK_RBRACE)
+            Token inner_t = lexer_peek(l);
+            if (inner_t.type == TOK_COLON || inner_t.type == TOK_RBRACE)
             {
                 break;
             }
-            if (t.type == TOK_COMMA)
+            if (inner_t.type == TOK_COMMA)
             {
                 lexer_next(l);
                 continue;
             }
 
             // Parse out(var) or inout(var)
-            if (t.type == TOK_IDENT)
+            if (inner_t.type == TOK_IDENT)
             {
-                char *mode = token_strdup(t);
+                char *mode = token_strdup(inner_t);
                 lexer_next(l);
 
                 if (lexer_peek(l).type != TOK_LPAREN)
@@ -834,19 +834,19 @@ ASTNode *parse_asm(ParserContext *ctx, Lexer *l)
 
         while (1)
         {
-            Token t = lexer_peek(l);
-            if (t.type == TOK_COLON || t.type == TOK_RBRACE)
+            Token inner_t = lexer_peek(l);
+            if (inner_t.type == TOK_COLON || inner_t.type == TOK_RBRACE)
             {
                 break;
             }
-            if (t.type == TOK_COMMA)
+            if (inner_t.type == TOK_COMMA)
             {
                 lexer_next(l);
                 continue;
             }
 
             // Parse in(var)
-            if (t.type == TOK_IDENT && strncmp(t.start, "in", 2) == 0)
+            if (inner_t.type == TOK_IDENT && strncmp(inner_t.start, "in", 2) == 0)
             {
                 lexer_next(l);
 
@@ -890,19 +890,19 @@ ASTNode *parse_asm(ParserContext *ctx, Lexer *l)
 
         while (1)
         {
-            Token t = lexer_peek(l);
-            if (t.type == TOK_RBRACE)
+            Token inner_t = lexer_peek(l);
+            if (inner_t.type == TOK_RBRACE)
             {
                 break;
             }
-            if (t.type == TOK_COMMA)
+            if (inner_t.type == TOK_COMMA)
             {
                 lexer_next(l);
                 continue;
             }
 
             // check for clobber("...")
-            if (t.type == TOK_IDENT && strncmp(t.start, "clobber", 7) == 0)
+            if (inner_t.type == TOK_IDENT && strncmp(inner_t.start, "clobber", 7) == 0)
             {
                 lexer_next(l); // eat clobber
                 if (lexer_peek(l).type != TOK_LPAREN)
@@ -1632,6 +1632,53 @@ ASTNode *parse_for(ParserContext *ctx, Lexer *l)
     return n;
 }
 
+static char *escape_c_string(const char *input)
+{
+    char *out = xmalloc(strlen(input) * 2 + 1);
+    char *p = out;
+    while (*input)
+    {
+        if (*input == '\\')
+        {
+            *p++ = *input++;
+            if (*input)
+            {
+                *p++ = *input++;
+            }
+        }
+        else if (*input == '\n')
+        {
+            *p++ = '\\';
+            *p++ = 'n';
+            input++;
+        }
+        else if (*input == '\r')
+        {
+            *p++ = '\\';
+            *p++ = 'r';
+            input++;
+        }
+        else if (*input == '\t')
+        {
+            *p++ = '\\';
+            *p++ = 't';
+            input++;
+        }
+        else if (*input == '"')
+        {
+            *p++ = '\\';
+            *p++ = '"';
+            input++;
+        }
+        else
+        {
+            *p++ = *input++;
+        }
+    }
+    *p = '\0';
+    return out;
+}
+
 char *process_printf_sugar(ParserContext *ctx, const char *content, int newline, const char *target,
                            char ***used_syms, int *count, int check_symbols)
 {
@@ -1658,8 +1705,18 @@ char *process_printf_sugar(ParserContext *ctx, const char *content, int newline,
             char buf[256];
             sprintf(buf, "fprintf(%s, \"%%s\", \"", target);
             strcat(gen, buf);
-            strncat(gen, cur, brace - cur);
+
+            int seg_len = brace - cur;
+            char *txt = xmalloc(seg_len + 1);
+            strncpy(txt, cur, seg_len);
+            txt[seg_len] = 0;
+
+            char *escaped = escape_c_string(txt);
+            strcat(gen, escaped);
             strcat(gen, "\"); ");
+
+            free(escaped);
+            free(txt);
         }
 
         if (*brace == 0)
@@ -2192,9 +2249,9 @@ ASTNode *parse_statement(ParserContext *ctx, Lexer *l)
         strncpy(content, tk.start, tk.len);
         content[tk.len] = '\n'; // Ensure newline
         content[tk.len + 1] = 0;
-        ASTNode *s = ast_create(NODE_RAW_STMT);
-        s->raw_stmt.content = content;
-        return s;
+        ASTNode *raw_s = ast_create(NODE_RAW_STMT);
+        raw_s->raw_stmt.content = content;
+        return raw_s;
     }
 
     if (tk.type == TOK_STRING || tk.type == TOK_FSTRING)
@@ -2211,13 +2268,21 @@ ASTNode *parse_statement(ParserContext *ctx, Lexer *l)
             // Strip quotes
             if (t.type == TOK_FSTRING)
             {
-                strncpy(inner, t.start + 2, t.len - 3);
-                inner[t.len - 3] = 0;
+                int is_multi =
+                    (t.len >= 7 && t.start[1] == '"' && t.start[2] == '"' && t.start[3] == '"');
+                int start_offset = is_multi ? 4 : 2;
+                int end_offset = is_multi ? 3 : 1;
+                strncpy(inner, t.start + start_offset, t.len - start_offset - end_offset);
+                inner[t.len - start_offset - end_offset] = 0;
             }
             else
             {
-                strncpy(inner, t.start + 1, t.len - 2);
-                inner[t.len - 2] = 0;
+                int is_multi =
+                    (t.len >= 6 && t.start[0] == '"' && t.start[1] == '"' && t.start[2] == '"');
+                int start_offset = is_multi ? 3 : 1;
+                int end_offset = is_multi ? 3 : 1;
+                strncpy(inner, t.start + start_offset, t.len - start_offset - end_offset);
+                inner[t.len - start_offset - end_offset] = 0;
             }
 
             int is_ln = (next_type == TOK_SEMICOLON || next_type == TOK_RBRACE);
@@ -2298,20 +2363,20 @@ ASTNode *parse_statement(ParserContext *ctx, Lexer *l)
 
         while (lexer_peek(&new_l).type != TOK_EOF)
         {
-            ASTNode *s = parse_statement(ctx, &new_l);
-            if (!s)
+            ASTNode *inner_s = parse_statement(ctx, &new_l);
+            if (!inner_s)
             {
                 break;
             }
             if (!head)
             {
-                head = s;
+                head = inner_s;
             }
             else
             {
-                tail->next = s;
+                tail->next = inner_s;
             }
-            tail = s;
+            tail = inner_s;
             while (tail->next)
             {
                 tail = tail->next;
@@ -2400,10 +2465,10 @@ ASTNode *parse_statement(ParserContext *ctx, Lexer *l)
             memcpy(content, start, len);
             content[len] = 0;
 
-            ASTNode *s = ast_create(NODE_RAW_STMT);
-            s->raw_stmt.content = normalize_raw_content(content);
+            ASTNode *raw_s = ast_create(NODE_RAW_STMT);
+            raw_s->raw_stmt.content = normalize_raw_content(content);
             free(content);
-            return s;
+            return raw_s;
         }
 
         // Check for plugin blocks
@@ -2734,14 +2799,14 @@ ASTNode *parse_statement(ParserContext *ctx, Lexer *l)
 
         // Label detection: identifier followed by : (but not ::)
         {
-            Lexer lookahead = *l;
-            Token ident = lexer_next(&lookahead);
-            Token maybe_colon = lexer_peek(&lookahead);
+            Lexer inner_lookahead = *l;
+            Token ident = lexer_next(&inner_lookahead);
+            Token maybe_colon = lexer_peek(&inner_lookahead);
             if (maybe_colon.type == TOK_COLON)
             {
                 // Check it's not :: (double colon for namespaces)
-                lexer_next(&lookahead);
-                Token after_colon = lexer_peek(&lookahead);
+                lexer_next(&inner_lookahead);
+                Token after_colon = lexer_peek(&inner_lookahead);
                 if (after_colon.type != TOK_COLON)
                 {
                     // This is a label!
@@ -2778,13 +2843,21 @@ ASTNode *parse_statement(ParserContext *ctx, Lexer *l)
             char *inner = xmalloc(t.len);
             if (t.type == TOK_FSTRING)
             {
-                strncpy(inner, t.start + 2, t.len - 3);
-                inner[t.len - 3] = 0;
+                int is_multi =
+                    (t.len >= 7 && t.start[1] == '"' && t.start[2] == '"' && t.start[3] == '"');
+                int start_offset = is_multi ? 4 : 2;
+                int end_offset = is_multi ? 3 : 1;
+                strncpy(inner, t.start + start_offset, t.len - start_offset - end_offset);
+                inner[t.len - start_offset - end_offset] = 0;
             }
             else
             {
-                strncpy(inner, t.start + 1, t.len - 2);
-                inner[t.len - 2] = 0;
+                int is_multi =
+                    (t.len >= 6 && t.start[0] == '"' && t.start[1] == '"' && t.start[2] == '"');
+                int start_offset = is_multi ? 3 : 1;
+                int end_offset = is_multi ? 3 : 1;
+                strncpy(inner, t.start + start_offset, t.len - start_offset - end_offset);
+                inner[t.len - start_offset - end_offset] = 0;
             }
 
             char **used_syms = NULL;
@@ -3532,8 +3605,9 @@ ASTNode *parse_import(ParserContext *ctx, Lexer *l)
             symbols[symbol_count][sym_tok.len] = 0;
 
             // Check for 'as alias'
-            Token next = lexer_peek(l);
-            if (next.type == TOK_IDENT && next.len == 2 && strncmp(next.start, "as", 2) == 0)
+            Token inner_next = lexer_peek(l);
+            if (inner_next.type == TOK_IDENT && inner_next.len == 2 &&
+                strncmp(inner_next.start, "as", 2) == 0)
             {
                 lexer_next(l); // eat 'as'
                 Token alias_tok = lexer_next(l);

@@ -966,7 +966,53 @@ ASTNode *parse_lambda(ParserContext *ctx, Lexer *l)
     return lambda;
 }
 
-// Helper to create AST for f-string content.
+static char *escape_c_string(const char *input)
+{
+    char *out = xmalloc(strlen(input) * 2 + 1);
+    char *p = out;
+    while (*input)
+    {
+        if (*input == '\\')
+        {
+            *p++ = *input++;
+            if (*input)
+            {
+                *p++ = *input++;
+            }
+        }
+        else if (*input == '\n')
+        {
+            *p++ = '\\';
+            *p++ = 'n';
+            input++;
+        }
+        else if (*input == '\r')
+        {
+            *p++ = '\\';
+            *p++ = 'r';
+            input++;
+        }
+        else if (*input == '\t')
+        {
+            *p++ = '\\';
+            *p++ = 't';
+            input++;
+        }
+        else if (*input == '"')
+        {
+            *p++ = '\\';
+            *p++ = '"';
+            input++;
+        }
+        else
+        {
+            *p++ = *input++;
+        }
+    }
+    *p = '\0';
+    return out;
+}
+
 static ASTNode *create_fstring_block(ParserContext *ctx, Token parent_token, char *content, int len)
 {
     ASTNode *block = ast_create(NODE_BLOCK);
@@ -1016,13 +1062,15 @@ static ASTNode *create_fstring_block(ParserContext *ctx, Token parent_token, cha
             {
                 int seg_len = dbl_close - cur;
                 ASTNode *cat = ast_create(NODE_RAW_STMT);
-                cat->raw_stmt.content = xmalloc(seg_len + 32);
                 char *txt = xmalloc(seg_len + 1);
                 strncpy(txt, cur, seg_len);
                 txt[seg_len] = 0;
-                sprintf(cat->raw_stmt.content, "strcat(_b, \"%s\");", txt);
+                char *escaped = escape_c_string(txt);
+                cat->raw_stmt.content = xmalloc(strlen(escaped) + 32);
+                sprintf(cat->raw_stmt.content, "strcat(_b, \"%s\");", escaped);
                 tail->next = cat;
                 tail = cat;
+                free(escaped);
                 free(txt);
             }
             ASTNode *cat = ast_create(NODE_RAW_STMT);
@@ -1039,13 +1087,15 @@ static ASTNode *create_fstring_block(ParserContext *ctx, Token parent_token, cha
             {
                 int seg_len = end - cur;
                 ASTNode *cat = ast_create(NODE_RAW_STMT);
-                cat->raw_stmt.content = xmalloc(seg_len + 32);
                 char *txt = xmalloc(seg_len + 1);
                 strncpy(txt, cur, seg_len);
                 txt[seg_len] = 0;
-                sprintf(cat->raw_stmt.content, "strcat(_b, \"%s\");", txt);
+                char *escaped = escape_c_string(txt);
+                cat->raw_stmt.content = xmalloc(strlen(escaped) + 32);
+                sprintf(cat->raw_stmt.content, "strcat(_b, \"%s\");", escaped);
                 tail->next = cat;
                 tail = cat;
+                free(escaped);
                 free(txt);
             }
             break;
@@ -1055,13 +1105,15 @@ static ASTNode *create_fstring_block(ParserContext *ctx, Token parent_token, cha
         {
             int seg_len = brace - cur;
             ASTNode *cat = ast_create(NODE_RAW_STMT);
-            cat->raw_stmt.content = xmalloc(seg_len + 32);
             char *txt = xmalloc(seg_len + 1);
             strncpy(txt, cur, seg_len);
             txt[seg_len] = 0;
-            sprintf(cat->raw_stmt.content, "strcat(_b, \"%s\");", txt);
+            char *escaped = escape_c_string(txt);
+            cat->raw_stmt.content = xmalloc(strlen(escaped) + 32);
+            sprintf(cat->raw_stmt.content, "strcat(_b, \"%s\");", escaped);
             tail->next = cat;
             tail = cat;
+            free(escaped);
             free(txt);
         }
 
@@ -1202,9 +1254,9 @@ static ASTNode *create_fstring_block(ParserContext *ctx, Token parent_token, cha
             {
                 // Use a temporary buffer for the token to ensure safe printing
                 char tok_buf[64];
-                int len = next.len < 63 ? next.len : 63;
-                strncpy(tok_buf, next.start, len);
-                tok_buf[len] = '\0';
+                int t_len = next.len < 63 ? next.len : 63;
+                strncpy(tok_buf, next.start, t_len);
+                tok_buf[t_len] = '\0';
                 if (next.len > 63)
                 {
                     strcat(tok_buf, "...");
@@ -1385,9 +1437,13 @@ static ASTNode *parse_float_literal(Token t)
 // Parse string literal
 static ASTNode *parse_string_literal(ParserContext *ctx, Token t)
 {
+    int is_multi = (t.len >= 6 && t.start[0] == '"' && t.start[1] == '"' && t.start[2] == '"');
+    int str_offset = is_multi ? 3 : 1;
+    int str_len = t.len - (is_multi ? 6 : 2);
+
     // Check for implicit interpolation
     int has_interpolation = 0;
-    for (int i = 1; i < t.len - 1; i++)
+    for (int i = str_offset; i < str_offset + str_len; i++)
     {
         if (t.start[i] == '{')
         {
@@ -1398,18 +1454,21 @@ static ASTNode *parse_string_literal(ParserContext *ctx, Token t)
 
     if (has_interpolation)
     {
-        // Use in-place parsing to preserve source location
-        // No need to null terminate, create_fstring_block takes length
-        ASTNode *node = create_fstring_block(ctx, t, (char *)t.start + 1, t.len - 2);
+        ASTNode *node = create_fstring_block(ctx, t, (char *)t.start + str_offset, str_len);
         return node;
     }
 
     ASTNode *node = ast_create(NODE_EXPR_LITERAL);
     node->token = t;
     node->literal.type_kind = LITERAL_STRING;
-    node->literal.string_val = xmalloc(t.len);
-    strncpy(node->literal.string_val, t.start + 1, t.len - 2);
-    node->literal.string_val[t.len - 2] = 0;
+
+    char *tmp = xmalloc(str_len + 1);
+    strncpy(tmp, t.start + str_offset, str_len);
+    tmp[str_len] = 0;
+
+    node->literal.string_val = escape_c_string(tmp);
+    free(tmp);
+
     node->type_info = type_new(TYPE_STRING);
     return node;
 }
@@ -1417,8 +1476,11 @@ static ASTNode *parse_string_literal(ParserContext *ctx, Token t)
 // Parse f-string literal
 static ASTNode *parse_fstring_literal(ParserContext *ctx, Token t)
 {
-    // Note: f"..." -> start+2
-    ASTNode *node = create_fstring_block(ctx, t, (char *)t.start + 2, t.len - 3);
+    int is_multi = (t.len >= 7 && t.start[1] == '"' && t.start[2] == '"' && t.start[3] == '"');
+    int str_offset = is_multi ? 4 : 2;
+    int str_len = t.len - (is_multi ? 7 : 3);
+
+    ASTNode *node = create_fstring_block(ctx, t, (char *)t.start + str_offset, str_len);
     return node;
 }
 
@@ -1705,10 +1767,10 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
         ASTNode *expr = parse_expression(ctx, l);
         skip_comments(l);
         {
-            Token t = lexer_next(l);
-            if (t.type != TOK_LBRACE)
+            Token inner_t = lexer_next(l);
+            if (inner_t.type != TOK_LBRACE)
             {
-                zpanic_at(t, "Expected { after match expression");
+                zpanic_at(inner_t, "Expected { after match expression");
             }
         }
 
@@ -2019,7 +2081,8 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
                         else
                         {
                             char *tmp = xmalloc(strlen(mod->base_name) + suffix.len + 2);
-                            sprintf(tmp, "%s_", mod->base_name);
+                            snprintf(tmp, strlen(mod->base_name) + suffix.len + 2, "%s_",
+                                     mod->base_name);
                             strncat(tmp, suffix.start, suffix.len);
                             free(acc);
                             acc = tmp;
@@ -2819,36 +2882,37 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
                 fmt[0] = 0;
                 for (int i = 0; i < ac; i++)
                 {
-                    Type *t = args[i]->type_info;
-                    if (!t && args[i]->type == NODE_EXPR_VAR)
+                    Type *inner_t = args[i]->type_info;
+                    if (!inner_t && args[i]->type == NODE_EXPR_VAR)
                     {
-                        t = find_symbol_type_info(ctx, args[i]->var_ref.name);
+                        inner_t = find_symbol_type_info(ctx, args[i]->var_ref.name);
                     }
 
-                    if (!t)
+                    if (!inner_t)
                     {
                         strcat(fmt, "%d"); // Fallback
                     }
                     else
                     {
-                        if (t->kind == TYPE_INT || t->kind == TYPE_I32 || t->kind == TYPE_BOOL)
+                        if (inner_t->kind == TYPE_INT || inner_t->kind == TYPE_I32 ||
+                            inner_t->kind == TYPE_BOOL)
                         {
                             strcat(fmt, "%d");
                         }
-                        else if (t->kind == TYPE_F64)
+                        else if (inner_t->kind == TYPE_F64)
                         {
                             strcat(fmt, "%lf");
                         }
-                        else if (t->kind == TYPE_F32 || t->kind == TYPE_FLOAT)
+                        else if (inner_t->kind == TYPE_F32 || inner_t->kind == TYPE_FLOAT)
                         {
                             strcat(fmt, "%f");
                         }
-                        else if (t->kind == TYPE_STRING)
+                        else if (inner_t->kind == TYPE_STRING)
                         {
                             strcat(fmt, "%s");
                         }
-                        else if (t->kind == TYPE_CHAR || t->kind == TYPE_I8 || t->kind == TYPE_U8 ||
-                                 t->kind == TYPE_BYTE)
+                        else if (inner_t->kind == TYPE_CHAR || inner_t->kind == TYPE_I8 ||
+                                 inner_t->kind == TYPE_U8 || inner_t->kind == TYPE_BYTE)
                         {
                             strcat(fmt, " %c"); // Space skip whitespace
                         }
@@ -2923,17 +2987,17 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
                     check_move_usage(ctx, arg, arg ? arg->token : t1);
                     if (arg && arg->type == NODE_EXPR_VAR)
                     {
-                        Type *t = find_symbol_type_info(ctx, arg->var_ref.name);
-                        if (!t)
+                        Type *inner_t = find_symbol_type_info(ctx, arg->var_ref.name);
+                        if (!inner_t)
                         {
                             ZenSymbol *s = find_symbol_entry(ctx, arg->var_ref.name);
                             if (s)
                             {
-                                t = s->type_info;
+                                inner_t = s->type_info;
                             }
                         }
 
-                        if (!is_type_copy(ctx, t))
+                        if (!is_type_copy(ctx, inner_t))
                         {
                             ZenSymbol *s = find_symbol_entry(ctx, arg->var_ref.name);
                             if (s)
@@ -3293,17 +3357,17 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
                     check_move_usage(ctx, arg, arg ? arg->token : t1);
                     if (arg && arg->type == NODE_EXPR_VAR)
                     {
-                        Type *t = find_symbol_type_info(ctx, arg->var_ref.name);
-                        if (!t)
+                        Type *inner_t = find_symbol_type_info(ctx, arg->var_ref.name);
+                        if (!inner_t)
                         {
                             ZenSymbol *s = find_symbol_entry(ctx, arg->var_ref.name);
                             if (s)
                             {
-                                t = s->type_info;
+                                inner_t = s->type_info;
                             }
                         }
 
-                        if (!is_type_copy(ctx, t))
+                        if (!is_type_copy(ctx, inner_t))
                         {
                             ZenSymbol *s = find_symbol_entry(ctx, arg->var_ref.name);
                             if (s)
@@ -3654,10 +3718,10 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
                     Type *cast_type_obj = parse_type_formal(ctx, l);
                     char *cast_type = type_to_string(cast_type_obj);
                     {
-                        Token t = lexer_next(l);
-                        if (t.type != TOK_RPAREN)
+                        Token inner_t = lexer_next(l);
+                        if (inner_t.type != TOK_RPAREN)
                         {
-                            zpanic_at(t, "Expected ) after cast");
+                            zpanic_at(inner_t, "Expected ) after cast");
                         }
                     }
                     ASTNode *target = parse_expr_prec(ctx, l, PREC_UNARY);
@@ -3721,7 +3785,7 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
             sprintf(tuple_name, "Tuple_%s", sig);
 
             char *code = xmalloc(4096);
-            sprintf(code, "(%s){", tuple_name);
+            snprintf(code, 4096, "(%s){", tuple_name);
 
             for (int i = 0; i < count; i++)
             {
@@ -3998,17 +4062,17 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
                     check_move_usage(ctx, arg, arg ? arg->token : t1);
                     if (arg && arg->type == NODE_EXPR_VAR)
                     {
-                        Type *t = find_symbol_type_info(ctx, arg->var_ref.name);
-                        if (!t)
+                        Type *inner_t = find_symbol_type_info(ctx, arg->var_ref.name);
+                        if (!inner_t)
                         {
                             ZenSymbol *s = find_symbol_entry(ctx, arg->var_ref.name);
                             if (s)
                             {
-                                t = s->type_info;
+                                inner_t = s->type_info;
                             }
                         }
 
-                        if (!is_type_copy(ctx, t))
+                        if (!is_type_copy(ctx, inner_t))
                         {
                             ZenSymbol *s = find_symbol_entry(ctx, arg->var_ref.name);
                             if (s)
@@ -4043,10 +4107,10 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
                 }
             }
             {
-                Token t = lexer_next(l);
-                if (t.type != TOK_RPAREN)
+                Token inner_t = lexer_next(l);
+                if (inner_t.type != TOK_RPAREN)
                 {
-                    zpanic_at(t, "Expected ) after call arguments");
+                    zpanic_at(inner_t, "Expected ) after call arguments");
                 }
             }
 
@@ -4074,10 +4138,10 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
             Token bracket = lexer_next(l); // consume '['
             ASTNode *index = parse_expression(ctx, l);
             {
-                Token t = lexer_next(l);
-                if (t.type != TOK_RBRACKET)
+                Token inner_t = lexer_next(l);
+                if (inner_t.type != TOK_RBRACKET)
                 {
-                    zpanic_at(t, "Expected ] after index");
+                    zpanic_at(inner_t, "Expected ] after index");
                 }
             }
 
@@ -4594,36 +4658,37 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                 fmt[0] = 0;
                 for (int i = 0; i < ac; i++)
                 {
-                    Type *t = args[i]->type_info;
-                    if (!t && args[i]->type == NODE_EXPR_VAR)
+                    Type *inner_t = args[i]->type_info;
+                    if (!inner_t && args[i]->type == NODE_EXPR_VAR)
                     {
-                        t = find_symbol_type_info(ctx, args[i]->var_ref.name);
+                        inner_t = find_symbol_type_info(ctx, args[i]->var_ref.name);
                     }
 
-                    if (!t)
+                    if (!inner_t)
                     {
                         strcat(fmt, "%d");
                     }
                     else
                     {
-                        if (t->kind == TYPE_INT || t->kind == TYPE_I32 || t->kind == TYPE_BOOL)
+                        if (inner_t->kind == TYPE_INT || inner_t->kind == TYPE_I32 ||
+                            inner_t->kind == TYPE_BOOL)
                         {
                             strcat(fmt, "%d");
                         }
-                        else if (t->kind == TYPE_F64)
+                        else if (inner_t->kind == TYPE_F64)
                         {
                             strcat(fmt, "%lf");
                         }
-                        else if (t->kind == TYPE_F32 || t->kind == TYPE_FLOAT)
+                        else if (inner_t->kind == TYPE_F32 || inner_t->kind == TYPE_FLOAT)
                         {
                             strcat(fmt, "%f");
                         }
-                        else if (t->kind == TYPE_STRING)
+                        else if (inner_t->kind == TYPE_STRING)
                         {
                             strcat(fmt, "%ms");
                         }
-                        else if (t->kind == TYPE_CHAR || t->kind == TYPE_I8 || t->kind == TYPE_U8 ||
-                                 t->kind == TYPE_BYTE)
+                        else if (inner_t->kind == TYPE_CHAR || inner_t->kind == TYPE_I8 ||
+                                 inner_t->kind == TYPE_U8 || inner_t->kind == TYPE_BYTE)
                         {
                             strcat(fmt, " %c");
                         }
@@ -5513,17 +5578,17 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                     check_move_usage(ctx, arg, arg ? arg->token : t1);
                     if (arg && arg->type == NODE_EXPR_VAR)
                     {
-                        Type *t = find_symbol_type_info(ctx, arg->var_ref.name);
-                        if (!t)
+                        Type *inner_t = find_symbol_type_info(ctx, arg->var_ref.name);
+                        if (!inner_t)
                         {
                             ZenSymbol *s = find_symbol_entry(ctx, arg->var_ref.name);
                             if (s)
                             {
-                                t = s->type_info;
+                                inner_t = s->type_info;
                             }
                         }
 
-                        if (!is_type_copy(ctx, t))
+                        if (!is_type_copy(ctx, inner_t))
                         {
                             ZenSymbol *s = find_symbol_entry(ctx, arg->var_ref.name);
                             if (s)
@@ -5701,14 +5766,14 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                 node->index.index = start;
 
                 char *struct_name = NULL;
-                Type *t = lhs->type_info;
+                Type *inner_t = lhs->type_info;
                 int is_ptr = 0;
 
-                if (t)
+                if (inner_t)
                 {
-                    if (t->kind == TYPE_STRUCT)
+                    if (inner_t->kind == TYPE_STRUCT)
                     {
-                        struct_name = t->name;
+                        struct_name = inner_t->name;
                     }
                     /*
                     else if (t->kind == TYPE_POINTER && t->inner && t->inner->kind == TYPE_STRUCT)
@@ -5871,9 +5936,9 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                             ASTNode *addr = ast_create(NODE_EXPR_UNARY);
                             addr->unary.op = xstrdup("&");
                             addr->unary.operand = lhs;
-                            if (t)
+                            if (inner_t)
                             {
-                                addr->type_info = type_new_ptr(t);
+                                addr->type_info = type_new_ptr(inner_t);
                             }
                             self_arg = addr;
                         }
@@ -6155,9 +6220,9 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                     int argc = 0;
                     while (1)
                     {
-                        Type *t = parse_type_formal(ctx, l);
-                        concrete[argc] = type_to_string(t);
-                        unmangled[argc] = type_to_c_string(t);
+                        Type *inner_t = parse_type_formal(ctx, l);
+                        concrete[argc] = type_to_string(inner_t);
+                        unmangled[argc] = type_to_c_string(inner_t);
                         argc++;
                         if (lexer_peek(l).type == TOK_COMMA)
                         {
@@ -6284,18 +6349,18 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
             // 2. Mark RHS as moved (Transfer ownership) if it's a Move type
             if (rhs->type == NODE_EXPR_VAR)
             {
-                Type *t = find_symbol_type_info(ctx, rhs->var_ref.name);
+                Type *inner_t = find_symbol_type_info(ctx, rhs->var_ref.name);
                 // If type info not on var, try looking up symbol
-                if (!t)
+                if (!inner_t)
                 {
                     ZenSymbol *s = find_symbol_entry(ctx, rhs->var_ref.name);
                     if (s)
                     {
-                        t = s->type_info;
+                        inner_t = s->type_info;
                     }
                 }
 
-                if (!is_type_copy(ctx, t))
+                if (!is_type_copy(ctx, inner_t))
                 {
                     ZenSymbol *s = find_symbol_entry(ctx, rhs->var_ref.name);
                     if (s)
@@ -6404,8 +6469,8 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
             if (lhs->type == NODE_EXPR_VAR)
             {
                 // Check if the variable is const
-                Type *t = find_symbol_type_info(ctx, lhs->var_ref.name);
-                if (t && t->is_const)
+                Type *inner_t = find_symbol_type_info(ctx, lhs->var_ref.name);
+                if (inner_t && inner_t->is_const)
                 {
                     zpanic_at(op, "Cannot assign to const variable '%s'", lhs->var_ref.name);
                 }
@@ -6430,8 +6495,8 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                 }
                 if (base && base->type == NODE_EXPR_VAR)
                 {
-                    Type *t = find_symbol_type_info(ctx, base->var_ref.name);
-                    if (t && t->is_const)
+                    Type *inner_t = find_symbol_type_info(ctx, base->var_ref.name);
+                    if (inner_t && inner_t->is_const)
                     {
                         zpanic_at(op, "Cannot assign to element of const variable '%s'",
                                   base->var_ref.name);

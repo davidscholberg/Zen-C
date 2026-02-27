@@ -292,10 +292,10 @@ Type *parse_type_base(ParserContext *ctx, Lexer *l)
                         }
                     }
 
-                    Type *t = type_new(name[0] == 'u' ? TYPE_UBITINT : TYPE_BITINT);
-                    t->array_size = width;
+                    Type *inner_t = type_new(name[0] == 'u' ? TYPE_UBITINT : TYPE_BITINT);
+                    inner_t->array_size = width;
                     free(name);
-                    return t;
+                    return inner_t;
                 }
             }
         }

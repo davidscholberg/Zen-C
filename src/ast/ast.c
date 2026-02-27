@@ -399,7 +399,7 @@ static char *type_to_string_impl(Type *t)
         char *p = res + strlen(res);
         for (int i = 0; i < dims_count; i++)
         {
-            sprintf(p, "[%d]", dims[i]);
+            snprintf(p, 20, "[%d]", dims[i]);
             p += strlen(p);
         }
 
@@ -416,14 +416,14 @@ static char *type_to_string_impl(Type *t)
             // fn*(Args)->Ret
             char *ret = type_to_string(t->inner);
             char *res = xmalloc(strlen(ret) + 64);
-            sprintf(res, "fn*(");
+            snprintf(res, strlen(ret) + 64, "fn*(");
 
             for (int i = 0; i < t->arg_count; i++)
             {
                 if (i > 0)
                 {
                     char *tmp = xmalloc(strlen(res) + 3);
-                    sprintf(tmp, "%s, ", res);
+                    snprintf(tmp, strlen(res) + 3, "%s, ", res);
                     free(res);
                     res = tmp;
                 }
@@ -688,7 +688,7 @@ static char *type_to_c_string_impl(Type *t)
         char *p = res + strlen(res);
         for (int i = 0; i < dims_count; i++)
         {
-            sprintf(p, "[%d]", dims[i]);
+            snprintf(p, 20, "[%d]", dims[i]);
             p += strlen(p);
         }
 
@@ -704,14 +704,14 @@ static char *type_to_c_string_impl(Type *t)
         {
             char *ret = type_to_c_string(t->inner);
             char *res = xmalloc(strlen(ret) + 64); // heuristic start buffer
-            sprintf(res, "%s (*)(", ret);
+            snprintf(res, strlen(ret) + 64, "%s (*)(", ret);
 
             for (int i = 0; i < t->arg_count; i++)
             {
                 if (i > 0)
                 {
                     char *tmp = xmalloc(strlen(res) + 3);
-                    sprintf(tmp, "%s, ", res);
+                    snprintf(tmp, strlen(res) + 3, "%s, ", res);
                     free(res);
                     res = tmp;
                 }

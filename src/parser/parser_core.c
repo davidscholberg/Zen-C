@@ -294,9 +294,9 @@ ASTNode *parse_program_nodes(ParserContext *ctx, Lexer *l)
                         char *any_cond = NULL;
                         while (1)
                         {
-                            Token t = lexer_next(l);
-                            if (t.type == TOK_IDENT && t.len == 3 &&
-                                strncmp(t.start, "not", 3) == 0)
+                            Token inner_t = lexer_next(l);
+                            if (inner_t.type == TOK_IDENT && inner_t.len == 3 &&
+                                strncmp(inner_t.start, "not", 3) == 0)
                             {
                                 if (lexer_next(l).type != TOK_LPAREN)
                                 {
@@ -388,9 +388,9 @@ ASTNode *parse_program_nodes(ParserContext *ctx, Lexer *l)
                         char *all_cond = NULL;
                         while (1)
                         {
-                            Token t = lexer_next(l);
-                            if (t.type == TOK_IDENT && t.len == 3 &&
-                                strncmp(t.start, "not", 3) == 0)
+                            Token inner_t = lexer_next(l);
+                            if (inner_t.type == TOK_IDENT && inner_t.len == 3 &&
+                                strncmp(inner_t.start, "not", 3) == 0)
                             {
                                 if (lexer_next(l).type != TOK_LPAREN)
                                 {
@@ -510,14 +510,14 @@ ASTNode *parse_program_nodes(ParserContext *ctx, Lexer *l)
                     lexer_next(l);
                     while (1)
                     {
-                        Token t = lexer_next(l);
-                        if (t.type != TOK_IDENT)
+                        Token inner_t = lexer_next(l);
+                        if (inner_t.type != TOK_IDENT)
                         {
-                            zpanic_at(t, "Expected trait name in @derive");
+                            zpanic_at(inner_t, "Expected trait name in @derive");
                         }
                         if (derived_count < 32)
                         {
-                            derived_traits[derived_count++] = token_strdup(t);
+                            derived_traits[derived_count++] = token_strdup(inner_t);
                         }
                         if (lexer_peek(l).type == TOK_COMMA)
                         {
@@ -567,17 +567,17 @@ ASTNode *parse_program_nodes(ParserContext *ctx, Lexer *l)
                         lexer_next(l); // eat (
                         while (1)
                         {
-                            Token t = lexer_next(l);
+                            Token inner_t = lexer_next(l);
                             new_attr->args =
                                 realloc(new_attr->args, sizeof(char *) * (new_attr->arg_count + 1));
 
-                            if (t.type == TOK_STRING)
+                            if (inner_t.type == TOK_STRING)
                             {
-                                new_attr->args[new_attr->arg_count++] = token_strdup(t);
+                                new_attr->args[new_attr->arg_count++] = token_strdup(inner_t);
                             }
                             else
                             {
-                                new_attr->args[new_attr->arg_count++] = token_strdup(t);
+                                new_attr->args[new_attr->arg_count++] = token_strdup(inner_t);
                             }
 
                             if (lexer_peek(l).type == TOK_COMMA)
@@ -780,16 +780,16 @@ ASTNode *parse_program_nodes(ParserContext *ctx, Lexer *l)
                 int depth = 1;
                 while (depth > 0)
                 {
-                    Token t = lexer_next(l);
-                    if (t.type == TOK_EOF)
+                    Token inner_t = lexer_next(l);
+                    if (inner_t.type == TOK_EOF)
                     {
-                        zpanic_at(t, "Unexpected EOF in raw block");
+                        zpanic_at(inner_t, "Unexpected EOF in raw block");
                     }
-                    if (t.type == TOK_LBRACE)
+                    if (inner_t.type == TOK_LBRACE)
                     {
                         depth++;
                     }
-                    if (t.type == TOK_RBRACE)
+                    if (inner_t.type == TOK_RBRACE)
                     {
                         depth--;
                     }
