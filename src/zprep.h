@@ -230,6 +230,10 @@ typedef struct
     // User-defined -D flags tracked for @cfg() evaluation.
     char *cfg_defines[64]; ///< Define names from -D flags.
     int cfg_define_count;  ///< Number of tracked -D defines.
+
+    // User-defined -I flags tracked for import resolution.
+    char *include_paths[64]; ///< Include paths for module resolution.
+    int include_path_count;  ///< Number of tracked -I paths.
 } CompilerConfig;
 
 extern CompilerConfig g_config;

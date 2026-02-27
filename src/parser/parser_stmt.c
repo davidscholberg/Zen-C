@@ -3684,41 +3684,45 @@ ASTNode *parse_import(ParserContext *ctx, Lexer *l)
         free(current_dir);
     }
 
-    // Check if file exists, if not try system-wide paths
     if (access(fn, R_OK) != 0)
     {
-        // Try system-wide standard library location
-        const char *system_paths[] = {getenv("ZC_ROOT"), "/usr/local/share/zenc",
-                                      "/usr/share/zenc"};
-        size_t system_paths_count = sizeof(system_paths) / sizeof(*system_paths);
-
-        char system_path[1024];
+        char search_path[1024];
         int found = 0;
 
-        for (size_t i = 0; i < system_paths_count && !found; i++)
+        for (int i = 0; i < g_config.include_path_count && !found; i++)
         {
-            if (!system_paths[i])
-            {
-                continue;
-            }
-            snprintf(system_path, sizeof(system_path), "%s/%s", system_paths[i], fn);
-            if (access(system_path, R_OK) == 0)
+            snprintf(search_path, sizeof(search_path), "%s/%s", g_config.include_paths[i], fn);
+            if (access(search_path, R_OK) == 0)
             {
                 free(fn);
-                fn = xstrdup(system_path);
+                fn = xstrdup(search_path);
                 found = 1;
             }
         }
 
         if (!found)
         {
-            // File not found anywhere - will error later when trying to open
+            const char *system_paths[] = {getenv("ZC_ROOT"), "/usr/local/share/zenc",
+                                          "/usr/share/zenc"};
+            size_t system_paths_count = sizeof(system_paths) / sizeof(*system_paths);
+
+            for (size_t i = 0; i < system_paths_count && !found; i++)
+            {
+                if (!system_paths[i])
+                {
+                    continue;
+                }
+                snprintf(search_path, sizeof(search_path), "%s/%s", system_paths[i], fn);
+                if (access(search_path, R_OK) == 0)
+                {
+                    free(fn);
+                    fn = xstrdup(search_path);
+                    found = 1;
+                }
+            }
         }
     }
 
-    // Canonicalize path to avoid duplicates (for example: "./std/io.zc" vs "std/io.zc")
-    // Only resolve if file exists! On Windows, realpath (_fullpath) resolves non-existent files to
-    // CWD.
     if (access(fn, R_OK) == 0)
     {
         char *real_fn = realpath(fn, NULL);
@@ -3729,7 +3733,6 @@ ASTNode *parse_import(ParserContext *ctx, Lexer *l)
         }
     }
 
-    // Check if file already imported
     if (is_file_imported(ctx, fn))
     {
         free(fn);

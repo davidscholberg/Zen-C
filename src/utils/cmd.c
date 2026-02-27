@@ -13,6 +13,10 @@ void print_search_paths()
     z_get_executable_path(exe_path, sizeof(exe_path));
 
     printf("Search paths:\n");
+    for (int i = 0; i < g_config.include_path_count; i++)
+    {
+        printf("  %s\n", g_config.include_paths[i]);
+    }
     printf("  ./\n");
     printf("  %s/std\n", exe_path);
     printf("  %s/../share/zenc/std\n", exe_path);
@@ -45,6 +49,19 @@ void print_usage()
            "   Verbose output\n");
     printf("  " COLOR_CYAN "-q" COLOR_RESET ", " COLOR_CYAN "--quiet" COLOR_RESET
            "     Quiet output\n");
+    printf("  " COLOR_CYAN "-I" COLOR_RESET " <dir>        Add directory to include search path\n");
+    printf("  " COLOR_CYAN "-L" COLOR_RESET " <dir>        Add directory to library search path\n");
+    printf("  " COLOR_CYAN "-l" COLOR_RESET " <lib>        Link to a library\n");
+    printf("  " COLOR_CYAN "-D" COLOR_RESET " <name>[=val] Define macro\n");
+    printf("  " COLOR_CYAN "-W" COLOR_RESET "<warn>       Pass warning flag to C compiler\n");
+    printf("  " COLOR_CYAN "-f" COLOR_RESET "<feat>       Pass feature flag to C compiler\n");
+    printf("  " COLOR_CYAN "-m" COLOR_RESET "<arch>       Pass architecture flag to C compiler\n");
+    printf("  " COLOR_CYAN "-x" COLOR_RESET
+           "<lang>       Specify expected input language to C compiler\n");
+    printf("  " COLOR_CYAN "-S" COLOR_RESET
+           "              Produce assembly instead of executable\n");
+    printf("  " COLOR_CYAN "-E" COLOR_RESET "              Preprocess only\n");
+    printf("  " COLOR_CYAN "-shared" COLOR_RESET "         Produce a shared library\n");
     printf("  " COLOR_CYAN "--emit-c" COLOR_RESET "        Keep generated C file (out.c)\n");
     printf("  " COLOR_CYAN "--keep-comments" COLOR_RESET " Preserve comments in output C\n");
     printf("  " COLOR_CYAN "--freestanding" COLOR_RESET "  Freestanding mode (no stdlib)\n");

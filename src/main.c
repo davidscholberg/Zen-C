@@ -146,13 +146,11 @@ int main(int argc, char **argv)
         }
         else if (strcmp(arg, "--version") == 0 || strcmp(arg, "-V") == 0)
         {
-            print_version();
-            return 0;
+            // Handled later
         }
         else if (strcmp(arg, "--paths") == 0)
         {
-            print_search_paths();
-            return 0;
+            // Handled later
         }
         else if (strcmp(arg, "--verbose") == 0 || strcmp(arg, "-v") == 0)
         {
@@ -253,13 +251,22 @@ int main(int argc, char **argv)
         }
         else if (strncmp(arg, "-I", 2) == 0)
         {
+            char *i_path = NULL;
             if (strlen(arg) > 2)
             {
-                main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), "-I", arg + 2);
+                i_path = arg + 2;
             }
             else if (i + 1 < argc)
             {
-                main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), "-I", argv[++i]);
+                i_path = argv[++i];
+            }
+            if (i_path)
+            {
+                main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), "-I", i_path);
+                if (g_config.include_path_count < 64)
+                {
+                    g_config.include_paths[g_config.include_path_count++] = xstrdup(i_path);
+                }
             }
         }
         else if (strncmp(arg, "-L", 2) == 0 || strncmp(arg, "-l", 2) == 0)
@@ -309,9 +316,16 @@ int main(int argc, char **argv)
             }
             main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), "-D", def);
         }
+        else if (strncmp(arg, "-W", 2) == 0 || strncmp(arg, "-f", 2) == 0 ||
+                 strncmp(arg, "-m", 2) == 0 || strncmp(arg, "-x", 2) == 0 ||
+                 strcmp(arg, "-S") == 0 || strcmp(arg, "-E") == 0 || strcmp(arg, "-shared") == 0)
+        {
+            // Standard C compiler flags that we want to pass directly to the backend
+            main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), arg, NULL);
+        }
         else if (arg[0] == '-')
         {
-            // Unknown flag or C flag
+            // Unknown flag, pass to C compiler just in case
             main_append_flag(g_config.gcc_flags, sizeof(g_config.gcc_flags), arg, NULL);
         }
         else
@@ -324,6 +338,22 @@ int main(int argc, char **argv)
             {
                 g_config.extra_files[g_config.extra_file_count++] = arg;
             }
+        }
+    }
+
+    // Now handle commands that just print info and exit
+    for (int i = arg_start; i < argc; i++)
+    {
+        char *arg = argv[i];
+        if (strcmp(arg, "--version") == 0 || strcmp(arg, "-V") == 0)
+        {
+            print_version();
+            return 0;
+        }
+        else if (strcmp(arg, "--paths") == 0)
+        {
+            print_search_paths();
+            return 0;
         }
     }
 
