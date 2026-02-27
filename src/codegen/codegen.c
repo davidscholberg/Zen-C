@@ -316,9 +316,11 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                 }
                 else
                 {
-                    fprintf(out, "({ ZC_AUTO _t = ");
+                    fprintf(out, "(__typeof__((");
                     codegen_expression(ctx, node->binary.left, out);
-                    fprintf(out, "; &_t; })");
+                    fprintf(out, "))[]){");
+                    codegen_expression(ctx, node->binary.left, out);
+                    fprintf(out, "}");
                 }
 
                 fprintf(out, ", ");
@@ -332,9 +334,11 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                 }
                 else
                 {
-                    fprintf(out, "({ ZC_AUTO _t = ");
+                    fprintf(out, "(__typeof__((");
                     codegen_expression(ctx, node->binary.right, out);
-                    fprintf(out, "; &_t; })");
+                    fprintf(out, "))[]){");
+                    codegen_expression(ctx, node->binary.right, out);
+                    fprintf(out, "}");
                 }
 
                 fprintf(out, ")");
@@ -579,9 +583,9 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                         }
                     }
 
-                    fprintf(out, "({ %s _t = ", type_mangled);
+                    fprintf(out, "%s__%s((%s[]){", mangled_base, method, type_mangled);
                     codegen_expression(ctx, target, out);
-                    fprintf(out, "; %s__%s(&_t", mangled_base, method);
+                    fprintf(out, "}");
                     ASTNode *arg = node->call.args;
                     while (arg)
                     {
@@ -589,7 +593,7 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                         codegen_expression_with_move(ctx, arg, out);
                         arg = arg->next;
                     }
-                    fprintf(out, "); })");
+                    fprintf(out, ")");
                 }
                 else
                 {
@@ -1388,11 +1392,11 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
     case NODE_EXPR_UNARY:
         if (node->unary.op && strcmp(node->unary.op, "&_rval") == 0)
         {
-            fprintf(out, "({ ");
-            emit_auto_type(ctx, node->unary.operand, node->token, out);
-            fprintf(out, " _t = (");
+            fprintf(out, "(__typeof__((");
             codegen_expression(ctx, node->unary.operand, out);
-            fprintf(out, "); &_t; })");
+            fprintf(out, "))[]){");
+            codegen_expression(ctx, node->unary.operand, out);
+            fprintf(out, "}");
         }
         else if (node->unary.op && strcmp(node->unary.op, "?") == 0)
         {
