@@ -141,41 +141,34 @@ static void append_flag(char *dest, size_t max_size, const char *flag)
 {
     size_t current_len = strlen(dest);
     int has_space = strchr(flag, ' ') != NULL;
-    size_t flag_len = strlen(flag) + (has_space ? 2 : 0);
+    size_t required = strlen(flag) + (has_space ? 2 : 0) + (current_len > 0 ? 1 : 0);
+
+    if (current_len + required + 1 > max_size)
+    {
+        zwarn("Build flags buffer overflow prevented.");
+        return;
+    }
 
     if (current_len > 0)
     {
-        if (current_len + flag_len + 2 >= max_size)
-        {
-            zwarn("Build flags buffer overflow prevented.");
-            return;
-        }
-        strcat(dest, " ");
         if (has_space)
         {
-            strcat(dest, "\"");
+            snprintf(dest + current_len, max_size - current_len, " \"%s\"", flag);
         }
-        strcat(dest, flag);
-        if (has_space)
+        else
         {
-            strcat(dest, "\"");
+            snprintf(dest + current_len, max_size - current_len, " %s", flag);
         }
     }
     else
     {
-        if (flag_len + 1 >= max_size)
-        {
-            zwarn("Build flags buffer overflow prevented.");
-            return;
-        }
         if (has_space)
         {
-            strcat(dest, "\"");
+            snprintf(dest, max_size, "\"%s\"", flag);
         }
-        strcat(dest, flag);
-        if (has_space)
+        else
         {
-            strcat(dest, "\"");
+            snprintf(dest, max_size, "%s", flag);
         }
     }
 }
@@ -206,7 +199,7 @@ static void expand_env_vars(char *dest, size_t dest_size, const char *src)
                         size_t val_len = strlen(val);
                         if (val_len < remaining)
                         {
-                            strcpy(d, val);
+                            strncpy(d, val, remaining);
                             d += val_len;
                             remaining -= val_len;
                             s = end + 1;

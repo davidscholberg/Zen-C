@@ -624,12 +624,12 @@ void zerror_with_hints(Token t, const char *msg, const char *const *hints)
 void error_undefined_function(Token t, const char *func_name, const char *suggestion)
 {
     char msg[256];
-    sprintf(msg, "Undefined function '%s'", func_name);
+    snprintf(msg, sizeof(msg), "Undefined function '%s'", func_name);
 
     if (suggestion)
     {
         char help[512];
-        sprintf(help, "Did you mean '%s'?", suggestion);
+        snprintf(help, sizeof(help), "Did you mean '%s'?", suggestion);
         zerror_with_suggestion(t, msg, help);
     }
     else
@@ -641,10 +641,11 @@ void error_undefined_function(Token t, const char *func_name, const char *sugges
 void error_wrong_arg_count(Token t, const char *func_name, int expected, int got)
 {
     char msg[256];
-    sprintf(msg, "Wrong number of arguments to function '%s'", func_name);
+    snprintf(msg, sizeof(msg), "Wrong number of arguments to function '%s'", func_name);
 
     char help[256];
-    sprintf(help, "Expected %d argument%s, but got %d", expected, expected == 1 ? "" : "s", got);
+    snprintf(help, sizeof(help), "Expected %d argument%s, but got %d", expected,
+             expected == 1 ? "" : "s", got);
 
     zerror_with_suggestion(t, msg, help);
 }
@@ -653,12 +654,12 @@ void error_undefined_field(Token t, const char *struct_name, const char *field_n
                            const char *suggestion)
 {
     char msg[256];
-    sprintf(msg, "Struct '%s' has no field '%s'", struct_name, field_name);
+    snprintf(msg, sizeof(msg), "Struct '%s' has no field '%s'", struct_name, field_name);
 
     if (suggestion)
     {
         char help[256];
-        sprintf(help, "Did you mean '%s'?", suggestion);
+        snprintf(help, sizeof(help), "Did you mean '%s'?", suggestion);
         zerror_with_suggestion(t, msg, help);
     }
     else
@@ -670,10 +671,10 @@ void error_undefined_field(Token t, const char *struct_name, const char *field_n
 void error_type_expected(Token t, const char *expected, const char *got)
 {
     char msg[256];
-    sprintf(msg, "Type mismatch");
+    snprintf(msg, sizeof(msg), "Type mismatch");
 
     char help[512];
-    sprintf(help, "Expected type '%s', but found '%s'", expected, got);
+    snprintf(help, sizeof(help), "Expected type '%s', but found '%s'", expected, got);
 
     zerror_with_suggestion(t, msg, help);
 }
@@ -681,7 +682,7 @@ void error_type_expected(Token t, const char *expected, const char *got)
 void error_cannot_index(Token t, const char *type_name)
 {
     char msg[256];
-    sprintf(msg, "Cannot index into type '%s'", type_name);
+    snprintf(msg, sizeof(msg), "Cannot index into type '%s'", type_name);
 
     zerror_with_suggestion(t, msg, "Only arrays and slices can be indexed");
 }
@@ -689,14 +690,14 @@ void error_cannot_index(Token t, const char *type_name)
 void warn_unused_variable(Token t, const char *var_name)
 {
     char msg[256];
-    sprintf(msg, "Unused variable '%s'", var_name);
+    snprintf(msg, sizeof(msg), "Unused variable '%s'", var_name);
     zwarn_with_suggestion(t, msg, "Consider removing it or prefixing with '_'");
 }
 
 void warn_shadowing(Token t, const char *var_name)
 {
     char msg[256];
-    sprintf(msg, "Variable '%s' shadows a previous declaration", var_name);
+    snprintf(msg, sizeof(msg), "Variable '%s' shadows a previous declaration", var_name);
     zwarn_with_suggestion(t, msg, "This can lead to confusion");
 }
 
@@ -708,14 +709,14 @@ void warn_unreachable_code(Token t)
 void warn_implicit_conversion(Token t, const char *from_type, const char *to_type)
 {
     char msg[256];
-    sprintf(msg, "Implicit conversion from '%s' to '%s'", from_type, to_type);
+    snprintf(msg, sizeof(msg), "Implicit conversion from '%s' to '%s'", from_type, to_type);
     zwarn_with_suggestion(t, msg, "Consider using an explicit cast");
 }
 
 void warn_missing_return(Token t, const char *func_name)
 {
     char msg[256];
-    sprintf(msg, "Function '%s' may not return a value in all paths", func_name);
+    snprintf(msg, sizeof(msg), "Function '%s' may not return a value in all paths", func_name);
     zwarn_with_suggestion(t, msg, "Add a return statement or make the function return 'void'");
 }
 
@@ -732,14 +733,14 @@ void warn_comparison_always_false(Token t, const char *reason)
 void warn_unused_parameter(Token t, const char *param_name, const char *func_name)
 {
     char msg[256];
-    sprintf(msg, "Unused parameter '%s' in function '%s'", param_name, func_name);
+    snprintf(msg, sizeof(msg), "Unused parameter '%s' in function '%s'", param_name, func_name);
     zwarn_with_suggestion(t, msg, "Consider prefixing with '_' if intentionally unused");
 }
 
 void warn_narrowing_conversion(Token t, const char *from_type, const char *to_type)
 {
     char msg[256];
-    sprintf(msg, "Narrowing conversion from '%s' to '%s'", from_type, to_type);
+    snprintf(msg, sizeof(msg), "Narrowing conversion from '%s' to '%s'", from_type, to_type);
     zwarn_with_suggestion(t, msg, "This may cause data loss");
 }
 
@@ -751,30 +752,31 @@ void warn_division_by_zero(Token t)
 void warn_integer_overflow(Token t, const char *type_name, long long value)
 {
     char msg[256];
-    sprintf(msg, "Integer literal %lld overflows type '%s'", value, type_name);
+    snprintf(msg, sizeof(msg), "Integer literal %lld overflows type '%s'", value, type_name);
     zwarn_with_suggestion(t, msg, "Value will be truncated");
 }
 
 void warn_array_bounds(Token t, int index, int size)
 {
     char msg[256];
-    sprintf(msg, "Array index %d is out of bounds for array of size %d", index, size);
+    snprintf(msg, sizeof(msg), "Array index %d is out of bounds for array of size %d", index, size);
     char note[256];
-    sprintf(note, "Valid indices are 0 to %d", size - 1);
+    snprintf(note, sizeof(note), "Valid indices are 0 to %d", size - 1);
     zwarn_with_suggestion(t, msg, note);
 }
 
 void warn_format_string(Token t, int arg_num, const char *expected, const char *got)
 {
     char msg[256];
-    sprintf(msg, "Format argument %d: expected '%s', got '%s'", arg_num, expected, got);
+    snprintf(msg, sizeof(msg), "Format argument %d: expected '%s', got '%s'", arg_num, expected,
+             got);
     zwarn_with_suggestion(t, msg, "Mismatched format specifier may cause undefined behavior");
 }
 
 void warn_null_pointer(Token t, const char *expr)
 {
     char msg[256];
-    sprintf(msg, "Potential null pointer access in '%s'", expr);
+    snprintf(msg, sizeof(msg), "Potential null pointer access in '%s'", expr);
     zwarn_with_suggestion(t, msg, "Add a null check before accessing");
 }
 

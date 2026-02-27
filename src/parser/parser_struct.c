@@ -276,7 +276,7 @@ ASTNode *parse_impl(ParserContext *ctx, Lexer *l)
     // Map primitive types to their C representation for correct mangling
     // Normalize type name (e.g. int -> int32_t)
     const char *normalized = normalize_type_name(name1);
-    char *final_name = strdup(normalized);
+    char *final_name = xstrdup(normalized);
     free(name1);
     name1 = final_name;
 

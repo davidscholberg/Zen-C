@@ -3691,7 +3691,13 @@ ASTNode *parse_import(ParserContext *ctx, Lexer *l)
 
         for (int i = 0; i < g_config.include_path_count && !found; i++)
         {
-            snprintf(search_path, sizeof(search_path), "%s/%s", g_config.include_paths[i], fn);
+            int w =
+                snprintf(search_path, sizeof(search_path), "%s/%s", g_config.include_paths[i], fn);
+            if (w < 0 || (size_t)w >= sizeof(search_path))
+            {
+                zwarn("Include path too long: %s/%s", g_config.include_paths[i], fn);
+                continue;
+            }
             if (access(search_path, R_OK) == 0)
             {
                 free(fn);
@@ -3712,7 +3718,12 @@ ASTNode *parse_import(ParserContext *ctx, Lexer *l)
                 {
                     continue;
                 }
-                snprintf(search_path, sizeof(search_path), "%s/%s", system_paths[i], fn);
+                int w = snprintf(search_path, sizeof(search_path), "%s/%s", system_paths[i], fn);
+                if (w < 0 || (size_t)w >= sizeof(search_path))
+                {
+                    zwarn("Include path too long: %s/%s", system_paths[i], fn);
+                    continue;
+                }
                 if (access(search_path, R_OK) == 0)
                 {
                     free(fn);

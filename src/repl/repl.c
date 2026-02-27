@@ -1175,7 +1175,7 @@ void run_repl(const char *self_path)
         }
         else
         {
-            strcpy(prompt_text, "\033[1;32m>>>\033[0m ");
+            snprintf(prompt_text, sizeof(prompt_text), "\033[1;32m>>>\033[0m ");
         }
 
         const char *prompt = (brace_depth > 0 || paren_depth > 0) ? "... " : prompt_text;
@@ -1195,7 +1195,7 @@ void run_repl(const char *self_path)
         {
             size_t cmd_len = strlen(line_buf);
             char cmd_buf[1024];
-            strcpy(cmd_buf, line_buf);
+            snprintf(cmd_buf, sizeof(cmd_buf), "%s", line_buf);
             if (cmd_len > 0 && cmd_buf[cmd_len - 1] == '\n')
             {
                 cmd_buf[--cmd_len] = 0;
@@ -1304,7 +1304,7 @@ void run_repl(const char *self_path)
                         show_code_size += strlen(history[i]) + 2;
                     }
                     char *show_code = malloc(show_code_size);
-                    strcpy(show_code, "");
+                    snprintf(show_code, show_code_size, "");
                     for (int i = 0; i < history_len; i++)
                     {
                         strcat(show_code, history[i]);
@@ -2084,7 +2084,7 @@ void run_repl(const char *self_path)
                         continue;
                     }
                     char *expr_buf = malloc(8192);
-                    strcpy(expr_buf, cmd_buf + 3);
+                    snprintf(expr_buf, sizeof(expr_buf), "%s", cmd_buf + 3);
 
                     int cmd_brace_depth = 0;
                     for (char *p = expr_buf; *p; p++)
@@ -2306,7 +2306,7 @@ void run_repl(const char *self_path)
 
             size_t len = strlen(line_buf);
             input_buffer = realloc(input_buffer, input_len + len + 1);
-            strcpy(input_buffer + input_len, line_buf);
+            snprintf(input_buffer + input_len, input_len + sizeof(line_buf), "%s", line_buf);
             input_len += len;
 
             if (brace_depth > 0 || paren_depth > 0)
@@ -2364,7 +2364,7 @@ void run_repl(const char *self_path)
                 char *last_line = history[history_len - 1];
 
                 char *check_buf = malloc(strlen(last_line) + 2);
-                strcpy(check_buf, last_line);
+                snprintf(check_buf, sizeof(check_buf), "%s", last_line);
                 strcat(check_buf, ";");
 
                 ParserContext ctx = {0};

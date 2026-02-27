@@ -682,7 +682,7 @@ void register_generic(ParserContext *ctx, char *name)
             return;
         }
     }
-    ctx->known_generics[ctx->known_generics_count++] = strdup(name);
+    ctx->known_generics[ctx->known_generics_count++] = xstrdup(name);
 }
 
 int is_known_generic(ParserContext *ctx, char *name)
@@ -2822,7 +2822,7 @@ int check_impl(ParserContext *ctx, const char *trait, const char *strct)
         r = r->next;
     }
 
-    char *base_strct = strdup(strct);
+    char *base_strct = xstrdup(strct);
     char *ptr = strchr(base_strct, '_');
     if (ptr)
     {
@@ -2832,7 +2832,7 @@ int check_impl(ParserContext *ctx, const char *trait, const char *strct)
     r = ctx->registered_impls;
     while (r)
     {
-        char *base_reg = strdup(r->strct);
+        char *base_reg = xstrdup(r->strct);
         char *ptr2 = strchr(base_reg, '<');
         if (ptr2)
         {

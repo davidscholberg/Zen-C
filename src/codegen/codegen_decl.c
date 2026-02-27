@@ -896,7 +896,8 @@ void emit_protos(ParserContext *ctx, ASTNode *node, FILE *out)
                 if (strncmp(fname, sname, slen) == 0 && fname[slen] == '_' &&
                     fname[slen + 1] == '_')
                 {
-                    strcpy(proto, fname);
+                    size_t alloc_len = strlen(fname) + strlen(sname) + 2;
+                    snprintf(proto, alloc_len, "%s", fname);
                 }
                 else
                 {
@@ -1245,7 +1246,7 @@ void print_type_defs(ParserContext *ctx, FILE *out, ASTNode *nodes)
         char *current = s;
         char *next_sep = strstr(current, "__");
         int i = 0;
-        while (current)
+        while (1)
         {
             if (next_sep)
             {

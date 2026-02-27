@@ -19,6 +19,10 @@ void regex_transpile(const char *input_body, const ZApi *api)
         p++;
     }
     char *pattern = strdup(p);
+    if (!pattern)
+    {
+        return;
+    }
     int len = strlen(pattern);
     while (len > 0 && isspace(pattern[len - 1]))
     {

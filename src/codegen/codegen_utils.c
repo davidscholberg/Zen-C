@@ -313,7 +313,7 @@ char *infer_type(ParserContext *ctx, ASTNode *node)
             if (target_type)
             {
                 char clean_type[256];
-                strcpy(clean_type, target_type);
+                snprintf(clean_type, sizeof(clean_type), "%s", target_type);
                 char *ptr = strchr(clean_type, '*');
                 if (ptr)
                 {
@@ -439,7 +439,7 @@ char *infer_type(ParserContext *ctx, ASTNode *node)
         }
 
         char clean_name[256];
-        strcpy(clean_name, parent_type);
+        snprintf(clean_name, sizeof(clean_name), "%s", parent_type);
         char *ptr = strchr(clean_name, '*');
         if (ptr)
         {
