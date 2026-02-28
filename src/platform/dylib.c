@@ -1,7 +1,7 @@
 #include "os.h"
 #include <stdio.h>
 
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
 #include <windows.h>
 
 void *z_dlopen(const char *path)

@@ -2,23 +2,22 @@
 #define ZC_PLATFORM_OS_H
 
 #include "lang.h"
+#include "arch.h"
 
 // OS Detection
 #ifdef __COSMOPOLITAN__
 #include <cosmo.h>
 #define z_is_windows() IsWindows()
 #else
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
 #define z_is_windows() 1
-#define ZC_OS_WINDOWS
 #else
 #define z_is_windows() 0
-#define ZC_OS_LINUX /* Assuming Linux/Unix */
 #endif
 #endif
 
 // System headers
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
 #include <windows.h>
 #include <direct.h>
 #include <io.h>
@@ -35,19 +34,6 @@
 #include <limits.h> /* PATH_MAX */
 #endif
 
-// Target architecture
-#if defined(__aarch64__)
-#define ZC_ARCH_ARM64 1
-#elif defined(__arm__)
-#define ZC_ARCH_ARM32 1
-#elif defined(__x86_64__) || defined(_M_X64)
-#define ZC_ARCH_X64 1
-#elif defined(__i386__) || defined(_M_IX86)
-#define ZC_ARCH_X86 1
-#else
-#error Add definition for this preprocessors to identify target cpu architecture
-#endif
-
 // Path helpers
 static inline int z_is_abs_path(const char *p)
 {
@@ -59,7 +45,7 @@ static inline int z_is_abs_path(const char *p)
     {
         return 1;
     }
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     if (p[0] == '\\' || (isalpha(p[0]) && p[1] == ':'))
     {
         return 1;
@@ -71,7 +57,7 @@ static inline int z_is_abs_path(const char *p)
 static inline char *z_path_last_sep(const char *path)
 {
     char *last_slash = strrchr(path, '/');
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     char *last_bs = strrchr(path, '\\');
     if (last_bs > last_slash)
     {
@@ -83,7 +69,7 @@ static inline char *z_path_last_sep(const char *path)
 
 static inline const char *z_get_exe_ext(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     return ".exe";
 #else
     return ".bin";
@@ -92,7 +78,7 @@ static inline const char *z_get_exe_ext(void)
 
 static inline const char *z_get_null_redirect(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     return " > NUL 2>&1";
 #else
     return " > /dev/null 2>&1";
@@ -101,7 +87,7 @@ static inline const char *z_get_null_redirect(void)
 
 static inline const char *z_get_comptime_link_flags(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     return " std/third-party/tre/lib/*.c";
 #else
     return "";
@@ -110,7 +96,7 @@ static inline const char *z_get_comptime_link_flags(void)
 
 static inline const char *z_get_run_prefix(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     return "";
 #else
     return "./";
@@ -119,7 +105,7 @@ static inline const char *z_get_run_prefix(void)
 
 static inline const char *z_get_plugin_ext(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     return ".dll";
 #else
     return ".so";

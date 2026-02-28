@@ -5,7 +5,7 @@
 #include <string.h>
 #include <time.h>
 
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
 #include <windows.h>
 #include <io.h>
 #include <process.h>
@@ -17,7 +17,7 @@
 
 void z_setup_terminal(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hOut == INVALID_HANDLE_VALUE)
     {
@@ -47,7 +47,7 @@ void z_setup_terminal(void)
 
 double z_get_monotonic_time(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     static LARGE_INTEGER freq;
     static int init = 0;
     if (!init)
@@ -67,7 +67,7 @@ double z_get_monotonic_time(void)
 
 double z_get_time(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     FILETIME ft;
     GetSystemTimeAsFileTime(&ft);
     ULARGE_INTEGER uli;
@@ -86,7 +86,7 @@ double z_get_time(void)
 
 const char *z_get_temp_dir(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     static char tmp[MAX_PATH_SIZE] = {0};
     if (tmp[0])
     {
@@ -118,7 +118,7 @@ const char *z_get_temp_dir(void)
 
 int z_get_pid(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     return _getpid();
 #else
     return getpid();
@@ -128,15 +128,15 @@ int z_get_pid(void)
 void z_get_executable_path(char *buffer, size_t size)
 {
     memset(buffer, 0, size);
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     GetModuleFileNameA(NULL, buffer, (DWORD)size);
-#elif defined(__linux__)
+#elif ZC_OS_LINUX
     ssize_t len = readlink("/proc/self/exe", buffer, size - 1);
     if (len != -1)
     {
         buffer[len] = '\0';
     }
-#elif defined(__APPLE__)
+#elif ZC_OS_MACOS
     // _NSGetExecutablePath usually needs <mach-o/dyld.h>
     // Fallback or leave empty
 #else
@@ -146,7 +146,7 @@ void z_get_executable_path(char *buffer, size_t size)
 
 int z_isatty(int fd)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     return _isatty(fd);
 #else
     return isatty(fd);
@@ -162,7 +162,7 @@ int z_match_os(const char *os_name)
 
     if (0 == strcmp(os_name, "linux"))
     {
-#ifdef __linux__
+#if ZC_OS_LINUX
         return 1;
 #else
         return 0;
@@ -170,7 +170,7 @@ int z_match_os(const char *os_name)
     }
     else if (0 == strcmp(os_name, "windows"))
     {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
         return 1;
 #else
         return 0;
@@ -178,7 +178,7 @@ int z_match_os(const char *os_name)
     }
     else if (0 == strcmp(os_name, "macos") || 0 == strcmp(os_name, "darwin"))
     {
-#ifdef __APPLE__
+#if ZC_OS_MACOS
         return 1;
 #else
         return 0;
@@ -189,9 +189,9 @@ int z_match_os(const char *os_name)
 
 const char *z_get_system_name(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     return "windows";
-#elif defined(__APPLE__)
+#elif ZC_OS_MACOS
     return "macos";
 #else
     return "linux";
@@ -200,7 +200,7 @@ const char *z_get_system_name(void)
 
 FILE *z_tmpfile(void)
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     char temp_path[MAX_PATH_SIZE];
     char temp_file[MAX_PATH_SIZE];
 
@@ -241,7 +241,7 @@ FILE *z_tmpfile(void)
 #endif
 }
 
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
 static char *quote_arg(const char *arg)
 {
     if (!strpbrk(arg, " \t\n\v\""))
@@ -278,7 +278,7 @@ static char *quote_arg(const char *arg)
 
 int z_run_command(char *const argv[])
 {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
     size_t cmd_len = 0;
     for (int i = 0; argv[i]; i++)
     {

@@ -46,7 +46,8 @@ static void *arena_alloc_raw(size_t size)
 }
 
 #include <time.h>
-#include "../platform/os.h"
+#include "platform/arch.h"
+#include "platform/os.h"
 
 void *xmalloc(size_t size)
 {
@@ -220,7 +221,7 @@ static int is_os_active(const char *os_name)
 {
     if (0 == strcmp(os_name, "linux"))
     {
-#ifdef __linux__
+#if ZC_OS_LINUX
         return 1;
 #else
         return 0;
@@ -228,7 +229,7 @@ static int is_os_active(const char *os_name)
     }
     else if (0 == strcmp(os_name, "windows"))
     {
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
         return 1;
 #else
         return 0;
@@ -236,7 +237,7 @@ static int is_os_active(const char *os_name)
     }
     else if (0 == strcmp(os_name, "macos") || 0 == strcmp(os_name, "darwin"))
     {
-#ifdef __APPLE__
+#if ZC_OS_MACOS
         return 1;
 #else
         return 0;

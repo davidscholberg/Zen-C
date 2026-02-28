@@ -2,8 +2,9 @@
 #include "colors.h"
 #include <stdlib.h>
 #include <string.h>
+#include "platform/arch.h"
 
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
 #include <io.h>
 #define isatty _isatty
 #define fileno _fileno

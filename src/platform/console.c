@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef _WIN32
+#if ZC_OS_WINDOWS
 #include <windows.h>
 #include <conio.h>
 #include <io.h>
