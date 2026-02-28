@@ -116,16 +116,17 @@ static int is_char_type(Type *t)
 
 static int get_asm_register_size(Type *t)
 {
-    if(!t)
+    if (!t)
     {
         return 0;
     }
-    if(t->kind == TYPE_F64 || t->kind == TYPE_I64 || t->kind == TYPE_U64 ||
-       (t->kind == TYPE_STRUCT && t->name && (0 == strcmp(t->name, "int64_t") || 0 == strcmp(t->name, "uint64_t"))))
+    if (t->kind == TYPE_F64 || t->kind == TYPE_I64 || t->kind == TYPE_U64 ||
+        (t->kind == TYPE_STRUCT && t->name &&
+         (0 == strcmp(t->name, "int64_t") || 0 == strcmp(t->name, "uint64_t"))))
     {
         return 64;
     }
-    if(t->kind == TYPE_I128 || t->kind == TYPE_U128)
+    if (t->kind == TYPE_I128 || t->kind == TYPE_U128)
     {
         return 128;
     }
@@ -1551,10 +1552,10 @@ static void check_node(TypeChecker *tc, ASTNode *node)
                          node->asm_stmt.outputs[i]);
                 tc_error(tc, node->token, msg);
             }
-            else if(sym->type_info)
+            else if (sym->type_info)
             {
                 int width = get_asm_register_size(sym->type_info);
-                if(width > node->asm_stmt.register_size)
+                if (width > node->asm_stmt.register_size)
                 {
                     node->asm_stmt.register_size = width;
                 }
@@ -1570,20 +1571,21 @@ static void check_node(TypeChecker *tc, ASTNode *node)
                          node->asm_stmt.inputs[i]);
                 tc_error(tc, node->token, msg);
             }
-            else if(sym->type_info)
+            else if (sym->type_info)
             {
                 int width = get_asm_register_size(sym->type_info);
-                if(width > node->asm_stmt.register_size)
+                if (width > node->asm_stmt.register_size)
                 {
                     node->asm_stmt.register_size = width;
                 }
             }
         }
-        if(node->asm_stmt.register_size > 64)
+        if (node->asm_stmt.register_size > 64)
         {
             char msg[256];
-            snprintf(msg, sizeof(msg), "Unsupported register size is required in inline assembly: %i bits",
-                        node->asm_stmt.register_size);
+            snprintf(msg, sizeof(msg),
+                     "Unsupported register size is required in inline assembly: %i bits",
+                     node->asm_stmt.register_size);
             tc_error(tc, node->token, msg);
         }
         break;
