@@ -1860,16 +1860,30 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                 int first = 1;
                 while (f)
                 {
-                    if (!first)
+                    // Skip fields with literal 0 init — compound literals
+                    // zero-initialize unset fields per C99. Also works around
+                    // a TCC bug where .val = 0 for struct-typed fields breaks
+                    // subsequent designated initializers.
+                    int skip = 0;
+                    if (f->var_decl.init_expr && f->var_decl.init_expr->type == NODE_EXPR_LITERAL &&
+                        f->var_decl.init_expr->literal.type_kind == LITERAL_INT &&
+                        f->var_decl.init_expr->literal.int_val == 0)
                     {
-                        fprintf(out, ", ");
+                        skip = 1;
                     }
-                    if (!is_vector)
+                    if (!skip)
                     {
-                        fprintf(out, ".%s = ", f->var_decl.name);
+                        if (!first)
+                        {
+                            fprintf(out, ", ");
+                        }
+                        if (!is_vector)
+                        {
+                            fprintf(out, ".%s = ", f->var_decl.name);
+                        }
+                        codegen_expression_with_move(ctx, f->var_decl.init_expr, out);
+                        first = 0;
                     }
-                    codegen_expression_with_move(ctx, f->var_decl.init_expr, out);
-                    first = 0;
                     f = f->next;
                 }
             }
