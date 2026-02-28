@@ -148,10 +148,20 @@ static void codegen_lambda_expr(ParserContext *ctx, ASTNode *node, FILE *out)
 {
     if (node->lambda.num_captures > 0)
     {
-        fprintf(out,
-                "({ struct Lambda_%d_Ctx *ctx = malloc(sizeof(struct "
-                "Lambda_%d_Ctx));\n",
-                node->lambda.lambda_id, node->lambda.lambda_id);
+        if (g_config.use_cpp)
+        {
+            fprintf(out,
+                    "({ struct Lambda_%d_Ctx *ctx = (struct Lambda_%d_Ctx*)malloc(sizeof(struct "
+                    "Lambda_%d_Ctx));\n",
+                    node->lambda.lambda_id, node->lambda.lambda_id, node->lambda.lambda_id);
+        }
+        else
+        {
+            fprintf(out,
+                    "({ struct Lambda_%d_Ctx *ctx = malloc(sizeof(struct "
+                    "Lambda_%d_Ctx));\n",
+                    node->lambda.lambda_id, node->lambda.lambda_id);
+        }
         for (int i = 0; i < node->lambda.num_captures; i++)
         {
             if (node->lambda.capture_modes && node->lambda.capture_modes[i] == 1)
@@ -211,12 +221,28 @@ static void codegen_lambda_expr(ParserContext *ctx, ASTNode *node, FILE *out)
                 fprintf(out, ";\n");
             }
         }
-        fprintf(out, "(z_closure_T){.func = _lambda_%d, .ctx = ctx}; })", node->lambda.lambda_id);
+        if (g_config.use_cpp)
+        {
+            fprintf(out, "z_closure_T _cl = {(void*)_lambda_%d, ctx}; _cl; })",
+                    node->lambda.lambda_id);
+        }
+        else
+        {
+            fprintf(out, "(z_closure_T){.func = _lambda_%d, .ctx = ctx}; })",
+                    node->lambda.lambda_id);
+        }
     }
     else
     {
-        fprintf(out, "((z_closure_T){.func = (void*)_lambda_%d, .ctx = NULL})",
-                node->lambda.lambda_id);
+        if (g_config.use_cpp)
+        {
+            fprintf(out, "(z_closure_T){ (void*)_lambda_%d, NULL }", node->lambda.lambda_id);
+        }
+        else
+        {
+            fprintf(out, "((z_closure_T){.func = (void*)_lambda_%d, .ctx = NULL})",
+                    node->lambda.lambda_id);
+        }
     }
 }
 
@@ -314,6 +340,14 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                     fprintf(out, "&");
                     codegen_expression(ctx, node->binary.left, out);
                 }
+                if (g_config.use_cpp)
+                {
+                    fprintf(out, "({ __typeof__((");
+                    codegen_expression(ctx, node->binary.left, out);
+                    fprintf(out, ")) _tmp = ");
+                    codegen_expression(ctx, node->binary.left, out);
+                    fprintf(out, "; &_tmp; })");
+                }
                 else
                 {
                     fprintf(out, "(__typeof__((");
@@ -331,6 +365,14 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                 {
                     fprintf(out, "&");
                     codegen_expression(ctx, node->binary.right, out);
+                }
+                if (g_config.use_cpp)
+                {
+                    fprintf(out, "({ __typeof__((");
+                    codegen_expression(ctx, node->binary.right, out);
+                    fprintf(out, ")) _tmp = ");
+                    codegen_expression(ctx, node->binary.right, out);
+                    fprintf(out, "; &_tmp; })");
                 }
                 else
                 {
@@ -804,8 +846,7 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                 {
                     const char *name = node->call.callee->var_ref.name;
 
-                    // Check if project uses C interop (has C imports or stdlib imports)
-                    int has_c_interop = 0;
+                    int has_c_interop = ctx->has_external_includes;
 
                     // Check modules for C header imports
                     Module *mod = ctx->modules;
@@ -1392,11 +1433,22 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
     case NODE_EXPR_UNARY:
         if (node->unary.op && strcmp(node->unary.op, "&_rval") == 0)
         {
-            fprintf(out, "(__typeof__((");
-            codegen_expression(ctx, node->unary.operand, out);
-            fprintf(out, "))[]){");
-            codegen_expression(ctx, node->unary.operand, out);
-            fprintf(out, "}");
+            if (g_config.use_cpp)
+            {
+                fprintf(out, "({ __typeof__((");
+                codegen_expression(ctx, node->unary.operand, out);
+                fprintf(out, ")) _tmp = ");
+                codegen_expression(ctx, node->unary.operand, out);
+                fprintf(out, "; &_tmp; })");
+            }
+            else
+            {
+                fprintf(out, "(__typeof__((");
+                codegen_expression(ctx, node->unary.operand, out);
+                fprintf(out, "))[]){");
+                codegen_expression(ctx, node->unary.operand, out);
+                fprintf(out, "}");
+            }
         }
         else if (node->unary.op && strcmp(node->unary.op, "?") == 0)
         {
@@ -1668,105 +1720,161 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
             sr = sr->next;
         }
 
+        // Determine if we are inside a function/lambda to allow statement expressions
+        int in_func = (g_current_func_ret_type != NULL || g_current_lambda != NULL);
+
+        // Find vector size if applicable
+        int vec_size = 0;
         if (is_vector)
         {
-            fprintf(out, "(%s){", struct_name);
-        }
-        else if (is_zen_struct)
-        {
-            if (is_union)
+            StructRef *v_chk = ctx->parsed_structs_list;
+            while (v_chk)
             {
-                fprintf(out, "(union %s){", struct_name);
+                if (v_chk->node && v_chk->node->type == NODE_STRUCT &&
+                    strcmp(v_chk->node->strct.name, struct_name) == 0)
+                {
+                    if (v_chk->node->type_info)
+                    {
+                        vec_size = v_chk->node->type_info->array_size;
+                    }
+                    break;
+                }
+                v_chk = v_chk->next;
+            }
+        }
+
+        if (g_config.use_cpp)
+        {
+            if (in_func && !is_vector)
+            {
+                fprintf(out, "({ %s _s = {}; ", struct_name);
+                ASTNode *f = node->struct_init.fields;
+                while (f)
+                {
+                    int skip = 0;
+                    if (f->var_decl.init_expr && f->var_decl.init_expr->type == NODE_EXPR_LITERAL &&
+                        f->var_decl.init_expr->literal.type_kind == LITERAL_INT &&
+                        f->var_decl.init_expr->literal.int_val == 0)
+                    {
+                        skip = 1;
+                    }
+                    if (!skip)
+                    {
+                        fprintf(out, "_s.%s = ", f->var_decl.name);
+                        codegen_expression_with_move(ctx, f->var_decl.init_expr, out);
+                        fprintf(out, "; ");
+                    }
+                    f = f->next;
+                }
+                fprintf(out, "_s; })");
             }
             else
             {
-                fprintf(out, "(struct %s){", struct_name);
+                fprintf(out, "%s { ", struct_name);
+                ASTNode *f = node->struct_init.fields;
+                int field_count = 0;
+                ASTNode *tmp = f;
+                while (tmp)
+                {
+                    field_count++;
+                    tmp = tmp->next;
+                }
+
+                if (is_vector && field_count == 1 && vec_size > 1)
+                {
+                    for (int i = 0; i < vec_size; i++)
+                    {
+                        if (i > 0)
+                        {
+                            fprintf(out, ", ");
+                        }
+                        codegen_expression(ctx, f->var_decl.init_expr, out);
+                    }
+                }
+                else
+                {
+                    int first = 1;
+                    while (f)
+                    {
+                        if (!first)
+                        {
+                            fprintf(out, ", ");
+                        }
+                        if (is_vector)
+                        {
+                            codegen_expression(ctx, f->var_decl.init_expr, out);
+                        }
+                        else
+                        {
+                            fprintf(out, ".%s = ", f->var_decl.name);
+                            codegen_expression_with_move(ctx, f->var_decl.init_expr, out);
+                        }
+                        first = 0;
+                        f = f->next;
+                    }
+                }
+                fprintf(out, " }");
             }
         }
         else
         {
-            fprintf(out, "(%s){", struct_name);
-        }
-
-        // Handle SIMD vector initialization (broadcast or per-element)
-        StructRef *sr_vec = ctx->parsed_structs_list;
-        while (sr_vec)
-        {
-            if (sr_vec->node && sr_vec->node->type == NODE_STRUCT &&
-                strcmp(sr_vec->node->strct.name, struct_name) == 0)
+            if (is_vector)
             {
-                if (sr_vec->node->type_info->kind == TYPE_VECTOR)
-                {
-                    ASTNode *f_vec = node->struct_init.fields;
-                    if (f_vec)
-                    {
-                        // Count fields to determine broadcast vs per-element
-                        int field_count = 0;
-                        ASTNode *tmp = f_vec;
-                        while (tmp)
-                        {
-                            field_count++;
-                            tmp = tmp->next;
-                        }
-
-                        if (field_count > 1)
-                        {
-                            // Per-element init: f32x4{1.0, 2.0, 3.0, 4.0}
-                            ASTNode *elem = f_vec;
-                            int i = 0;
-                            while (elem)
-                            {
-                                if (i > 0)
-                                {
-                                    fprintf(out, ", ");
-                                }
-                                codegen_expression(ctx, elem->var_decl.init_expr, out);
-                                elem = elem->next;
-                                i++;
-                            }
-                        }
-                        else
-                        {
-                            // Broadcast init: f32x4{v: 1.0}
-                            for (int i = 0; i < sr_vec->node->type_info->array_size; i++)
-                            {
-                                if (i > 0)
-                                {
-                                    fprintf(out, ", ");
-                                }
-                                codegen_expression(ctx, f_vec->var_decl.init_expr, out);
-                            }
-                        }
-                    }
-                    fprintf(out, "}");
-                    return;
-                }
-                break;
+                fprintf(out, "(%s){", struct_name);
             }
-            sr_vec = sr_vec->next;
-        }
-
-        ASTNode *f = node->struct_init.fields;
-        while (f)
-        {
-            fprintf(out, ".%s = ", f->var_decl.name);
-            if (f->var_decl.init_expr->type == NODE_EXPR_LITERAL &&
-                f->var_decl.init_expr->literal.type_kind == LITERAL_INT &&
-                f->var_decl.init_expr->literal.int_val == 0)
+            else if (is_union)
             {
-                fprintf(out, "{0}");
+                fprintf(out, "(union %s){", struct_name);
+            }
+            else if (is_zen_struct)
+            {
+                fprintf(out, "(struct %s){", struct_name);
             }
             else
             {
-                codegen_expression_with_move(ctx, f->var_decl.init_expr, out);
+                fprintf(out, "(%s){", struct_name);
             }
-            if (f->next)
+
+            ASTNode *f = node->struct_init.fields;
+            int field_count = 0;
+            ASTNode *tmp = f;
+            while (tmp)
             {
-                fprintf(out, ", ");
+                field_count++;
+                tmp = tmp->next;
             }
-            f = f->next;
+
+            if (is_vector && field_count == 1 && vec_size > 1)
+            {
+                for (int i = 0; i < vec_size; i++)
+                {
+                    if (i > 0)
+                    {
+                        fprintf(out, ", ");
+                    }
+                    codegen_expression(ctx, f->var_decl.init_expr, out);
+                }
+            }
+            else
+            {
+                int first = 1;
+                while (f)
+                {
+                    if (!first)
+                    {
+                        fprintf(out, ", ");
+                    }
+                    if (!is_vector)
+                    {
+                        fprintf(out, ".%s = ", f->var_decl.name);
+                    }
+                    codegen_expression_with_move(ctx, f->var_decl.init_expr, out);
+                    first = 0;
+                    f = f->next;
+                }
+            }
+            fprintf(out, "}");
         }
-        fprintf(out, "}");
         break;
     }
     case NODE_EXPR_ARRAY_LITERAL:

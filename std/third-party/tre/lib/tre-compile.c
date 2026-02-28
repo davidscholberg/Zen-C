@@ -745,7 +745,7 @@ static reg_errcode_t tre_copy_ast(tre_mem_t mem, tre_stack_t *stack, tre_ast_nod
                 }
                 if (!IS_SPECIAL(lit))
                 {
-                    ((tre_literal_t *)(*result)->obj)->u.class = lit->u.class;
+                    ((tre_literal_t *)(*result)->obj)->u.char_class = lit->u.char_class;
                     ((tre_literal_t *)(*result)->obj)->neg_classes = lit->neg_classes;
                 }
                 else if (IS_PARAMETER(lit))
@@ -1138,7 +1138,7 @@ static tre_pos_and_tags_t *tre_set_empty(tre_mem_t mem)
 }
 
 static tre_pos_and_tags_t *tre_set_one(tre_mem_t mem, int position, long code_min, long code_max,
-                                       tre_ctype_t class, tre_ctype_t *neg_classes, int backref)
+                                       tre_ctype_t char_class, tre_ctype_t *neg_classes, int backref)
 {
     tre_pos_and_tags_t *new_set;
 
@@ -1151,7 +1151,7 @@ static tre_pos_and_tags_t *tre_set_one(tre_mem_t mem, int position, long code_mi
     new_set[0].position = position;
     new_set[0].code_min = code_min;
     new_set[0].code_max = code_max;
-    new_set[0].class = class;
+    new_set[0].char_class = char_class;
     new_set[0].neg_classes = neg_classes;
     new_set[0].backref = backref;
     new_set[1].position = -1;
@@ -1188,7 +1188,7 @@ static tre_pos_and_tags_t *tre_set_union(tre_mem_t mem, tre_pos_and_tags_t *set1
         new_set[s1].code_min = set1[s1].code_min;
         new_set[s1].code_max = set1[s1].code_max;
         new_set[s1].assertions = set1[s1].assertions | assertions;
-        new_set[s1].class = set1[s1].class;
+        new_set[s1].char_class = set1[s1].char_class;
         new_set[s1].neg_classes = set1[s1].neg_classes;
         new_set[s1].backref = set1[s1].backref;
         if (set1[s1].tags == NULL && tags == NULL)
@@ -1250,7 +1250,7 @@ static tre_pos_and_tags_t *tre_set_union(tre_mem_t mem, tre_pos_and_tags_t *set1
         new_set[s1 + s2].code_max = set2[s2].code_max;
         /* XXX - why not | assertions here as well? */
         new_set[s1 + s2].assertions = set2[s2].assertions;
-        new_set[s1 + s2].class = set2[s2].class;
+        new_set[s1 + s2].char_class = set2[s2].char_class;
         new_set[s1 + s2].neg_classes = set2[s2].neg_classes;
         new_set[s1 + s2].backref = set2[s2].backref;
         if (set2[s2].tags == NULL)
@@ -1523,7 +1523,7 @@ static reg_errcode_t tre_compute_npfl(tre_mem_t mem, tre_stack_t *stack, tre_ast
                         return REG_ESPACE;
                     }
                     node->lastpos = tre_set_one(mem, lit->position, lit->code_min, lit->code_max,
-                                                lit->u.class, lit->neg_classes, -1);
+                                                lit->u.char_class, lit->neg_classes, -1);
                     if (!node->lastpos)
                     {
                         return REG_ESPACE;
@@ -1782,7 +1782,7 @@ static reg_errcode_t tre_make_trans(tre_pos_and_tags_t *p1, tre_pos_and_tags_t *
                 trans->state = transitions + offs[p2->position];
                 trans->state_id = p2->position;
                 trans->assertions = p1->assertions | p2->assertions |
-                                    (p1->class ? ASSERT_CHAR_CLASS : 0) |
+                                    (p1->char_class ? ASSERT_CHAR_CLASS : 0) |
                                     (p1->neg_classes != NULL ? ASSERT_CHAR_CLASS_NEG : 0);
                 if (p1->backref >= 0)
                 {
@@ -1793,7 +1793,7 @@ static reg_errcode_t tre_make_trans(tre_pos_and_tags_t *p1, tre_pos_and_tags_t *
                 }
                 else
                 {
-                    trans->u.class = p1->class;
+                    trans->u.char_class = p1->char_class;
                 }
                 if (p1->neg_classes != NULL)
                 {
@@ -1949,9 +1949,9 @@ static reg_errcode_t tre_make_trans(tre_pos_and_tags_t *p1, tre_pos_and_tags_t *
                     {
                         DPRINT((", backref %d", trans->u.backref));
                     }
-                    else if (trans->u.class)
+                    else if (trans->u.char_class)
                     {
-                        DPRINT((", class %ld", (long)trans->u.class));
+                        DPRINT((", class %ld", (long)trans->u.char_class));
                     }
                     if (trans->neg_classes)
                     {

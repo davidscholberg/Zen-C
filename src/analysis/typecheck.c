@@ -523,9 +523,8 @@ static void check_expr_call(TypeChecker *tc, ASTNode *node)
             ZenSymbol *sym = tc_lookup(tc, func_name);
             if (!sym)
             {
-                // Check global parser context for functions
                 ZenSymbol *global_sym = find_symbol_in_all(tc->pctx, func_name);
-                if (!global_sym)
+                if (!global_sym && !should_suppress_undef_warning(tc->pctx, func_name))
                 {
                     char msg[256];
                     snprintf(msg, sizeof(msg), "Undefined function '%s'", func_name);

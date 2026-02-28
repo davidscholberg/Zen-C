@@ -126,7 +126,7 @@ static reg_errcode_t tre_new_item(tre_mem_t mem, int min, int max, int *i, int *
 }
 
 /* Expands a character class to character ranges. */
-static reg_errcode_t tre_expand_ctype(tre_mem_t mem, tre_ctype_t class, tre_ast_node_t ***items,
+static reg_errcode_t tre_expand_ctype(tre_mem_t mem, tre_ctype_t char_class, tre_ast_node_t ***items,
                                       int *i, int *max_i, int cflags)
 {
     reg_errcode_t status = REG_OK;
@@ -137,8 +137,8 @@ static reg_errcode_t tre_expand_ctype(tre_mem_t mem, tre_ctype_t class, tre_ast_
     for (j = 0; (j < 256) && (status == REG_OK); j++)
     {
         c = (tre_cint_t)j;
-        if (tre_isctype(c, class) || ((cflags & REG_ICASE) && (tre_isctype(tre_tolower(c), class) ||
-                                                               tre_isctype(tre_toupper(c), class))))
+        if (tre_isctype(c, char_class) || ((cflags & REG_ICASE) && (tre_isctype(tre_tolower(c), char_class) ||
+                                                               tre_isctype(tre_toupper(c), char_class))))
         {
             if (min < 0)
             {
@@ -306,7 +306,7 @@ static reg_errcode_t tre_parse_bracket_items(tre_parse_ctx_t *ctx, int negate,
 {
     const tre_char_t *re = ctx->re;
     reg_errcode_t status;
-    tre_ctype_t class = (tre_ctype_t)0;
+    tre_ctype_t char_class = (tre_ctype_t)0;
     tre_cint_t min = 0, max = 0;
     int i = *num_items;
     int max_i = *items_size;
@@ -326,7 +326,7 @@ static reg_errcode_t tre_parse_bracket_items(tre_parse_ctx_t *ctx, int negate,
             re++;
             break;
         }
-        class = (tre_ctype_t)0;
+        char_class = (tre_ctype_t)0;
         if (re + 2 < ctx->re_end && *(re + 1) == CHAR_MINUS && *(re + 2) != CHAR_RBRACKET)
         {
             DPRINT(("tre_parse_bracket:  range: '%.*" STRF "'\n", REST(re)));
@@ -386,20 +386,20 @@ static reg_errcode_t tre_parse_bracket_items(tre_parse_ctx_t *ctx, int negate,
 #endif /* !TRE_WCHAR */
                 tmp_str[len] = '\0';
                 DPRINT(("  class name: %s\n", tmp_str));
-                class = tre_ctype(tmp_str);
-                if (!class)
+                char_class = tre_ctype(tmp_str);
+                if (!char_class)
                 {
                     return REG_ECTYPE;
                 }
                 /* Optimize character classes for 8 bit character sets. */
                 if (ctx->mb_cur_max == 1)
                 {
-                    status = tre_expand_ctype(ctx->mem, class, items, &i, &max_i, ctx->cflags);
+                    status = tre_expand_ctype(ctx->mem, char_class, items, &i, &max_i, ctx->cflags);
                     if (status != REG_OK)
                     {
                         return status;
                     }
-                    class = (tre_ctype_t)0;
+                    char_class = (tre_ctype_t)0;
                     skip = 1;
                 }
                 re = endptr + 2;
@@ -422,7 +422,7 @@ static reg_errcode_t tre_parse_bracket_items(tre_parse_ctx_t *ctx, int negate,
             min = max = *re++;
         }
 
-        if (class && negate)
+        if (char_class && negate)
         {
             if (*num_neg_classes >= MAX_NEG_CLASSES)
             {
@@ -430,7 +430,7 @@ static reg_errcode_t tre_parse_bracket_items(tre_parse_ctx_t *ctx, int negate,
             }
             else
             {
-                neg_classes[(*num_neg_classes)++] = class;
+                neg_classes[(*num_neg_classes)++] = char_class;
             }
         }
         else if (!skip)
@@ -440,12 +440,12 @@ static reg_errcode_t tre_parse_bracket_items(tre_parse_ctx_t *ctx, int negate,
             {
                 return status;
             }
-            ((tre_literal_t *)((*items)[i - 1])->obj)->u.class = class;
+            ((tre_literal_t *)((*items)[i - 1])->obj)->u.char_class = char_class;
         }
 
         /* Add opposite-case counterpoints if REG_ICASE is present.
        This is broken if there are more than two "same" characters. */
-        if (ctx->cflags & REG_ICASE && !class && !skip)
+        if (ctx->cflags & REG_ICASE && !char_class && !skip)
         {
             tre_cint_t cmin, ccurr;
 
@@ -540,7 +540,7 @@ static reg_errcode_t tre_parse_bracket(tre_parse_ctx_t *ctx, tre_ast_node_t **re
         max = l->code_max;
 
         DPRINT(("item: %ld - %ld, class %ld, curr_max = %ld\n", l->code_min, l->code_max,
-                (long)l->u.class, curr_max));
+                (long)l->u.char_class, curr_max));
 
         if (negate)
         {

@@ -346,6 +346,8 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
             kids = kids->root.children;
         }
 
+        g_current_func_ret_type = NULL;
+        g_current_lambda = NULL;
         global_user_structs = kids;
 
         if (!ctx->skip_preamble)
@@ -361,6 +363,10 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
         }
 
         emit_includes_and_aliases(kids, out);
+        if (g_config.use_cpp)
+        {
+            fprintf(out, "\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
+        }
 
         if (ctx->hoist_out)
         {
@@ -488,13 +494,14 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
         ASTNode *sorted = topo_sort_structs(merged);
 
         print_type_defs(ctx, out, sorted);
-        emit_enum_protos(sorted, out);
-        emit_global_aliases(ctx, out); // Emit ALL aliases (including imports)
-        emit_type_aliases(kids, out);  // Emit local aliases (redundant but safe)
+        if (!g_config.use_cpp)
+        {
+            emit_enum_protos(sorted, out);
+        }
+        emit_global_aliases(ctx, out);
+        emit_type_aliases(kids, out);
         emit_trait_defs(kids, out);
 
-        // Also emit traits from parsed_globals_list (from auto-imported files like std/mem.zc)
-        // but only if they weren't already emitted from kids
         StructRef *trait_ref = ctx->parsed_globals_list;
         while (trait_ref)
         {
@@ -821,6 +828,11 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
         if (!has_user_main && test_count > 0)
         {
             fprintf(out, "\nint main() { _z_run_tests(); return 0; }\n");
+        }
+
+        if (g_config.use_cpp)
+        {
+            fprintf(out, "\n#ifdef __cplusplus\n}\n#endif\n");
         }
 
         // Clean up emitted content tracking list

@@ -99,6 +99,13 @@ void build_compile_arg_list(ArgList *list, const char *outfile, const char *temp
         arg_list_add(list, "-w");
     }
 
+    // C++ compatibility flags
+    if (g_config.use_cpp)
+    {
+        arg_list_add(list, "-fpermissive");
+        arg_list_add(list, "-Wno-write-strings");
+    }
+
     // Output file
     arg_list_add(list, "-o");
     arg_list_add(list, outfile);

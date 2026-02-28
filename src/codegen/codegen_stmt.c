@@ -1029,7 +1029,7 @@ void codegen_node_single(ParserContext *ctx, ASTNode *node, FILE *out)
                     TypeKind k = node->type_info->kind;
                     if (k == TYPE_ARRAY || k == TYPE_STRUCT)
                     {
-                        fprintf(out, " = {0}");
+                        fprintf(out, " = %s", g_config.use_cpp ? "{}" : "{0}");
                     }
                     else if (is_int_type(k))
                     {

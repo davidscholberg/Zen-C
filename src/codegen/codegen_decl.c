@@ -50,7 +50,7 @@ void emit_preamble(ParserContext *ctx, FILE *out)
     else
     {
         // Standard hosted preamble.
-        fputs("#define _GNU_SOURCE\n", out);
+        fputs("#ifndef _GNU_SOURCE\n#define _GNU_SOURCE\n#endif\n", out);
         fputs("#include <stdio.h>\n#include <stdlib.h>\n#include "
               "<stddef.h>\n#include <string.h>\n",
               out);
@@ -65,6 +65,7 @@ void emit_preamble(ParserContext *ctx, FILE *out)
             fputs("#define ZC_AUTO auto\n", out);
             fputs("#define ZC_AUTO_INIT(var, init) auto var = (init)\n", out);
             fputs("#define ZC_CAST(T, x) static_cast<T>(x)\n", out);
+            fputs("#define null nullptr\n", out);
             // C++ _z_str via overloads
             fputs("inline const char* _z_bool_str(bool b) { return b ? \"true\" : \"false\"; }\n",
                   out);
@@ -395,7 +396,41 @@ void emit_lambda_defs(ParserContext *ctx, FILE *out)
         g_current_lambda = node;
         if (node->lambda.body && node->lambda.body->type == NODE_BLOCK)
         {
-            codegen_walker(ctx, node->lambda.body->block.statements, out);
+            if (node->lambda.is_expression && node->type_info && node->type_info->inner &&
+                node->type_info->inner->kind != TYPE_VOID)
+            {
+                ASTNode *stmt = node->lambda.body->block.statements;
+                while (stmt)
+                {
+                    if (stmt->next == NULL)
+                    {
+                        if (stmt->type != NODE_RETURN)
+                        {
+                            fprintf(out, "    return ");
+                        }
+                        codegen_node_single(ctx, stmt, out);
+                    }
+                    else
+                    {
+                        codegen_node_single(ctx, stmt, out);
+                    }
+                    stmt = stmt->next;
+                }
+            }
+            else
+            {
+                codegen_walker(ctx, node->lambda.body->block.statements, out);
+            }
+        }
+        else if (node->lambda.body)
+        {
+            if (node->type_info && node->type_info->inner &&
+                node->type_info->inner->kind != TYPE_VOID && node->lambda.body->type != NODE_RETURN)
+            {
+                fprintf(out, "    return ");
+            }
+            codegen_node_single(ctx, node->lambda.body, out);
+            fprintf(out, ";\n");
         }
         g_current_lambda = NULL;
 
@@ -456,12 +491,78 @@ void emit_struct_defs(ParserContext *ctx, ASTNode *node, FILE *out)
 
             if (node->strct.is_union)
             {
-                fprintf(out, "union %s {", node->strct.name);
+                fprintf(out, "union");
             }
             else
             {
-                fprintf(out, "struct %s {", node->strct.name);
+                fprintf(out, "struct");
             }
+
+            int has_any_attr = node->strct.is_packed || node->strct.align ||
+                               node->strct.is_export || node->strct.attributes;
+            if (has_any_attr)
+            {
+                fprintf(out, " __attribute__((");
+                int first_attr = 1;
+                if (node->strct.is_packed)
+                {
+                    fprintf(out, "packed");
+                    first_attr = 0;
+                }
+                if (node->strct.align)
+                {
+                    if (!first_attr)
+                    {
+                        fprintf(out, ", ");
+                    }
+                    fprintf(out, "aligned(%d)", node->strct.align);
+                    first_attr = 0;
+                }
+                if (node->strct.is_export)
+                {
+                    if (!first_attr)
+                    {
+                        fprintf(out, ", ");
+                    }
+                    fprintf(out, "visibility(\"default\")");
+                    first_attr = 0;
+                }
+                if (node->strct.attributes)
+                {
+                    Attribute *custom = node->strct.attributes;
+                    while (custom)
+                    {
+                        if (!first_attr)
+                        {
+                            fprintf(out, ", ");
+                        }
+                        fprintf(out, "%s", custom->name);
+                        if (custom->arg_count > 0)
+                        {
+                            fprintf(out, "(");
+                            for (int i = 0; i < custom->arg_count; i++)
+                            {
+                                if (i > 0)
+                                {
+                                    fprintf(out, ", ");
+                                }
+                                fprintf(out, "%s", custom->args[i]);
+                            }
+                            fprintf(out, ")");
+                        }
+                        first_attr = 0;
+                        custom = custom->next;
+                    }
+                }
+                fprintf(out, "))");
+            }
+
+            if (node->strct.name)
+            {
+                fprintf(out, " %s", node->strct.name);
+            }
+
+            fprintf(out, " {");
             fprintf(out, "\n");
             if (node->strct.fields)
             {
@@ -473,54 +574,6 @@ void emit_struct_defs(ParserContext *ctx, ASTNode *node, FILE *out)
                 fprintf(out, "    char _placeholder;\n");
             }
             fprintf(out, "}");
-
-            if (node->strct.is_packed && node->strct.align)
-            {
-                fprintf(out, " __attribute__((packed, aligned(%d)))", node->strct.align);
-            }
-            else if (node->strct.is_packed)
-            {
-                fprintf(out, " __attribute__((packed))");
-            }
-            if (node->strct.align)
-            {
-                fprintf(out, " __attribute__((aligned(%d)))", node->strct.align);
-            }
-            if (node->strct.is_export)
-            {
-                fprintf(out, " __attribute__((visibility(\"default\")))");
-            }
-
-            if (node->strct.attributes)
-            {
-                fprintf(out, " __attribute__((");
-                Attribute *custom = node->strct.attributes;
-                int first = 1;
-                while (custom)
-                {
-                    if (!first)
-                    {
-                        fprintf(out, ", ");
-                    }
-                    fprintf(out, "%s", custom->name);
-                    if (custom->arg_count > 0)
-                    {
-                        fprintf(out, "(");
-                        for (int i = 0; i < custom->arg_count; i++)
-                        {
-                            if (i > 0)
-                            {
-                                fprintf(out, ", ");
-                            }
-                            fprintf(out, "%s", custom->args[i]);
-                        }
-                        fprintf(out, ")");
-                    }
-                    first = 0;
-                    custom = custom->next;
-                }
-                fprintf(out, "))");
-            }
 
             fprintf(out, ";\n\n");
             if (node->cfg_condition)
@@ -561,18 +614,39 @@ void emit_struct_defs(ParserContext *ctx, ASTNode *node, FILE *out)
                 if (v->variant.payload)
                 {
                     char *tstr = codegen_type_to_string(v->variant.payload);
-                    fprintf(out,
-                            "%s %s_%s(%s v) { return (%s){.tag=%s_%s_Tag, "
-                            ".data.%s=v}; }\n",
-                            node->enm.name, node->enm.name, v->variant.name, tstr, node->enm.name,
-                            node->enm.name, v->variant.name, v->variant.name);
+                    if (g_config.use_cpp)
+                    {
+                        fprintf(out,
+                                "%s %s_%s(%s v) { %s _res = {}; _res.tag=%s_%s_Tag; "
+                                "_res.data.%s=v; return _res; }\n",
+                                node->enm.name, node->enm.name, v->variant.name, tstr,
+                                node->enm.name, node->enm.name, v->variant.name, v->variant.name);
+                    }
+                    else
+                    {
+                        fprintf(out,
+                                "%s %s_%s(%s v) { return (%s){.tag=%s_%s_Tag, "
+                                ".data.%s=v}; }\n",
+                                node->enm.name, node->enm.name, v->variant.name, tstr,
+                                node->enm.name, node->enm.name, v->variant.name, v->variant.name);
+                    }
                     free(tstr);
                 }
                 else
                 {
-                    fprintf(out, "%s %s_%s() { return (%s){.tag=%s_%s_Tag}; }\n", node->enm.name,
-                            node->enm.name, v->variant.name, node->enm.name, node->enm.name,
-                            v->variant.name);
+                    if (g_config.use_cpp)
+                    {
+                        fprintf(out,
+                                "%s %s_%s() { %s _res = {}; _res.tag=%s_%s_Tag; return _res; }\n",
+                                node->enm.name, node->enm.name, v->variant.name, node->enm.name,
+                                node->enm.name, v->variant.name);
+                    }
+                    else
+                    {
+                        fprintf(out, "%s %s_%s() { return (%s){.tag=%s_%s_Tag}; }\n",
+                                node->enm.name, node->enm.name, v->variant.name, node->enm.name,
+                                node->enm.name, v->variant.name);
+                    }
                 }
                 v = v->next;
             }
@@ -746,6 +820,8 @@ void emit_trait_defs(ASTNode *node, FILE *out)
 // Emit global variables
 void emit_globals(ParserContext *ctx, ASTNode *node, FILE *out)
 {
+    g_current_func_ret_type = NULL;
+    g_current_lambda = NULL;
     while (node)
     {
         if (node->type == NODE_VAR_DECL || node->type == NODE_CONST)
@@ -803,6 +879,36 @@ void emit_protos(ParserContext *ctx, ASTNode *node, FILE *out)
     {
         if (f->type == NODE_FUNCTION)
         {
+            if (g_config.use_cpp && f->func.name && !f->func.body)
+            {
+                if (strncmp(f->func.name, "_z_", 3) == 0 || strncmp(f->func.name, "_time_", 6) == 0)
+                {
+                    f = f->next;
+                    continue;
+                }
+                static const char *skip_cstdlib[] = {
+                    "strstr",  "strchr",   "strrchr", "strpbrk", "memchr",  "atoi",   "atol",
+                    "atof",    "strtol",   "strtoul", "strtod",  "malloc",  "calloc", "realloc",
+                    "free",    "memcpy",   "memmove", "memset",  "memcmp",  "strlen", "strcmp",
+                    "strncmp", "strcpy",   "strncpy", "strcat",  "strncat", "printf", "fprintf",
+                    "sprintf", "snprintf", "fopen",   "fclose",  "fread",   "fwrite", "fseek",
+                    "ftell",   "exit",     "abort",   "abs",     NULL};
+                int skip_fn = 0;
+                for (int si = 0; skip_cstdlib[si]; si++)
+                {
+                    if (strcmp(f->func.name, skip_cstdlib[si]) == 0)
+                    {
+                        skip_fn = 1;
+                        break;
+                    }
+                }
+                if (skip_fn)
+                {
+                    f = f->next;
+                    continue;
+                }
+            }
+
             if (f->cfg_condition)
             {
                 fprintf(out, "#if %s\n", f->cfg_condition);
@@ -1267,8 +1373,6 @@ void print_type_defs(ParserContext *ctx, FILE *out, ASTNode *nodes)
     }
     fprintf(out, "\n");
 
-    // FIRST: Emit typedefs for ALL structs and enums in the current compilation
-    // unit (local definitions)
     ASTNode *local = nodes;
     while (local)
     {

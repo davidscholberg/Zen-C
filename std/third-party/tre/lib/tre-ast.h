@@ -60,7 +60,7 @@ typedef struct
     int position;
     union
     {
-        tre_ctype_t class;
+        tre_ctype_t char_class;
         int *params;
     } u;
     tre_ctype_t *neg_classes;

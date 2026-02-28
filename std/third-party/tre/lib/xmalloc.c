@@ -104,7 +104,7 @@ static void hash_table_add(hashTable *tbl, void *ptr, size_t bytes, const char *
                            const char *func)
 {
     unsigned int i;
-    hashTableItem *item, *new;
+    hashTableItem *item, *new_item;
 
     i = hash_void_ptr(ptr);
 
@@ -117,21 +117,21 @@ static void hash_table_add(hashTable *tbl, void *ptr, size_t bytes, const char *
         }
     }
 
-    new = malloc(sizeof(*new));
-    assert(new != NULL);
-    new->ptr = ptr;
-    new->bytes = bytes;
-    new->file = file;
-    new->line = line;
-    new->func = func;
-    new->next = NULL;
+    new_item = malloc(sizeof(*new_item));
+    assert(new_item != NULL);
+    new_item->ptr = ptr;
+    new_item->bytes = bytes;
+    new_item->file = file;
+    new_item->line = line;
+    new_item->func = func;
+    new_item->next = NULL;
     if (item != NULL)
     {
-        item->next = new;
+        item->next = new_item;
     }
     else
     {
-        tbl->table[i] = new;
+        tbl->table[i] = new_item;
     }
 
     xmalloc_current += bytes;
