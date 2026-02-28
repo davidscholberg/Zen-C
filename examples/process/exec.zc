@@ -12,7 +12,7 @@ fn main() {
     
     if output.exit_code == 0 {
         "--- Output ---";
-        output.stdout.print();
+        output.std_out.print();
         "--------------";
     } else {
         !"Command failed with exit code: {output.exit_code}";

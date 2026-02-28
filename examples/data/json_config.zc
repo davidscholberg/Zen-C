@@ -166,10 +166,7 @@ fn main() {
     "  features.metrics: {out_metrics}";
     "  allowed_hosts: {out_hosts_count} entries";
 
-    // Cleanup - RAII via drop()
-    config.drop();
-    json_out.free();
-    json_str.free();
+    // Cleanup - RAII handles config, json_out, and json_str automatically
     JsonValue::free(root);
     free(root);
 
