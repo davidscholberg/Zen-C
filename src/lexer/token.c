@@ -60,6 +60,11 @@ Token lexer_next(Lexer *l)
                 len += 2;
                 l->line++;
             }
+            else if (s[len] == '\\' && s[len + 1] == '\r' && s[len + 2] == '\n')
+            {
+                len += 3;
+                l->line++;
+            }
             else
             {
                 len++;
