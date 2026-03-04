@@ -399,8 +399,7 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                     fprintf(out, ")");
                 }
             }
-            else if (t1 && (strcmp(t1, "string") == 0 || strcmp(t1, "char*") == 0 ||
-                            strcmp(t1, "const char*") == 0))
+            else if (t1 && (strcmp(t1, "string") == 0)
             {
                 int is_null_compare = 0;
                 if (node->binary.right->type == NODE_EXPR_VAR &&
