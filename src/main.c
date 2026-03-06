@@ -167,7 +167,7 @@ int main(int argc, char **argv)
         {
             g_config.no_zen = 1;
         }
-        else if (strcmp(arg, "--typecheck") == 0)
+        else if (strcmp(arg, "--check") == 0)
         {
             g_config.use_typecheck = 1;
         }

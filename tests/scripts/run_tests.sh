@@ -6,7 +6,7 @@
 # Options:
 #   --cpp               Compile all tests in C++ mode
 #   --cc <compiler>     Use a specific C compiler
-#   --typecheck         Enable typechecking
+#   --check         Enable typechecking
 #
 # Examples:
 #   ./tests/scripts/run_tests.sh                    # Test in C mode (default)
@@ -44,7 +44,7 @@ for arg in "$@"; do
     if [ "$prev_arg" = "--cc" ]; then
         CC_NAME="$arg"
     fi
-    if [ "$arg" = "--typecheck" ]; then
+    if [ "$arg" = "--check" ]; then
         USE_TYPECHECK=1
     fi
     if [ "$arg" = "--cpp" ]; then
@@ -130,9 +130,9 @@ while read -r test_file; do
     fi
 
     # Skip tests that require typechecking if not enabled
-    if grep -q "// REQUIRE: TYPECHECK" "$test_file"; then
+    if grep -q "// REQUIRE: CHECK" "$test_file"; then
         if [ $USE_TYPECHECK -eq 0 ]; then
-             echo "Skipping $test_file (requires --typecheck)"
+             echo "Skipping $test_file (requires --check)"
              ((SKIPPED++))
              continue
         fi

@@ -1,4 +1,4 @@
-// REQUIRE: TYPECHECK
+// REQUIRE: CHECK
 // EXPECT: FAIL
 struct Mover {
     val: int

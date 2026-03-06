@@ -1,4 +1,4 @@
-// Move errors are only reported with --typecheck
+// Move errors are only reported with --check
 
 struct Mover {
     val: int
