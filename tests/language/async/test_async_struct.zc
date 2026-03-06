@@ -8,7 +8,7 @@ struct StringOfString {
 
 async fn fetch_struct() -> String {
     let str = String { data: malloc(sizeof(char) * 6) };
-    str.data = "Hello\0";
+    strcpy(str.data, "Hello");
     return str;
 }
 
@@ -21,10 +21,10 @@ async fn fetch_struct2() -> StringOfString {
 
 test "async_returns_struct" {
     let result = await fetch_struct();
-    assert(result.data == "Hello", "failed to return struct");
+    assert(strcmp(result.data, "Hello") == 0, "failed to return struct");
 
     let result2 = await fetch_struct2();
-    assert(result2.str.data == "Hello", "failed to return struct of struct");
+    assert(strcmp(result2.str.data, "Hello") == 0, "failed to return struct of struct");
 }
 
 impl Drop for String {
