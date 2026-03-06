@@ -12,5 +12,5 @@ test "async_returns_string" {
     assert(result == "Hello, world!", "failed to return string");
 
     let result2 = await fetch_charptr();
-    assert(result2 == "Hello, world!", "failed to return char*");
+    assert(strcmp(result2, "Hello, world!") == 0, "failed to return char*");
 }
