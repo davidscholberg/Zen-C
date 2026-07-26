@@ -1,172 +1,45 @@
 <div align="center">
-  <p>
-    <a href="README.md">English</a> •
-    <a href="translations/README_DE.md">Deutsch</a> •
-    <a href="translations/README_RU.md">Русский</a> •
-    <a href="translations/README_ZH_CN.md">简体中文</a> •
-    <a href="translations/README_ZH_TW.md">繁體中文</a> •
-    <a href="translations/README_ES.md">Español</a> •
-    <a href="translations/README_IT.md">Italiano</a> •
-    <a href="translations/README_PT_BR.md">Português Brasileiro</a>
-  </p>
-</div>
-
-<div align="center">
   <h1>Zen C</h1>
   <h3>Modern Ergonomics. Zero Overhead. Pure C.</h3>
   <br>
-  <p>
-    <a href="#"><img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build Status"></a>
-    <a href="#"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
-    <a href="#"><img src="https://img.shields.io/github/v/release/zenc-lang/zenc?label=version&color=orange" alt="Version"></a>
-    <a href="#"><img src="https://img.shields.io/badge/platform-linux%20%7C%20windows%20%7C%20macos-lightgrey" alt="Platform"></a>
-  </p>
   <p><em>Write like a high-level language, run like C.</em></p>
-</div>
-
-<hr>
-
-<div align="center">
-  <p>
-    <b><a href="#overview">Overview</a></b> •
-    <b><a href="#community">Community</a></b> •
-    <b><a href="#quick-start">Quick Start</a></b> •
-    <b><a href="#ecosystem">Ecosystem</a></b> •
-    <b><a href="#language-reference">Language Reference</a></b> •
-    <b><a href="#standard-library">Standard Library</a></b> •
-    <b><a href="#tooling">Toolchain</a></b>
-  </p>
 </div>
 
 ---
 
 ## Overview
 
-**Zen C** is a modern systems programming language that compiles to human-readable `GNU C`/`C11`. It provides a rich feature set including type inference, pattern matching, generics, traits, async/await, and manual memory management with RAII capabilities, all while maintaining 100% C ABI compatibility.
+**Zen C** is a modern systems programming language that compiles to `C89` for maximum portability. It provides a rich feature set including pattern matching, generics, traits, and manual memory management with deferred cleanup, all while maintaining 100% C ABI compatibility.
 
 ## Community
 
 Join the discussion, share demos, ask questions, or report bugs in the official Zen C Discord server!
 
 - Discord: [Join here](https://discord.com/invite/q6wEsCmkJP)
-- RFCs: [Propose features](https://github.com/zenc-lang/rfcs)
-
-## Ecosystem
-
-The Zen C project consists of several repositories. Below you can find the primary ones:
-
-| Repository | Description | Status |
-| :--- | :--- | :--- |
-| **[zenc](https://github.com/zenc-lang/zenc)** | The core Zen C compiler (`zc`), CLI, and Standard Library. | Active Development |
-| **[docs](https://github.com/zenc-lang/docs)** | The official documentation and language specification. | Active |
-| **[rfcs](https://github.com/zenc-lang/rfcs)** | The Request for Comments (RFC) repository. Shape the future of the language. | Active |
-| **[vscode-zenc](https://github.com/zenc-lang/vscode-zenc)** | Official VS Code extension (Syntax Highlighting, Snippets). | Alpha |
-| **[www](https://github.com/zenc-lang/www)** | Source code for `zenc-lang.org`. | Active |
-| **[awesome-zenc](https://github.com/zenc-lang/awesome-zenc)** | A curated list of awesome Zen C examples | Growing |
-| **[zenc.vim](https://github.com/zenc-lang/zenc.vim)** | Official Vim/Neovim plugin (Syntax, Indentation). | Active |
-
-## Showcase
-
-Check out these projects built with Zen C:
-
-- **[ZC-pong-3ds](https://github.com/5quirre1/ZC-pong-3ds)**: A Pong clone for the Nintendo 3DS.
-- **[zen-c-parin](https://github.com/Kapendev/zen-c-parin)**: A basic example using Zen C with Parin.
-- **[almond](https://git.sr.ht/~leanghok/almond)**: A minimal web browser written in Zen C.
-
----
-
-## Index
-
-<table align="center">
-  <tr>
-    <th width="50%">General</th>
-    <th width="50%">Language Reference</th>
-  </tr>
-  <tr>
-    <td valign="top">
-      <ul>
-        <li><a href="#overview">Overview</a></li>
-        <li><a href="#community">Community</a></li>
-        <li><a href="https://github.com/zenc-lang/rfcs">RFCs</a></li>
-        <li><a href="#quick-start">Quick Start</a></li>
-        <li><a href="#ecosystem">Ecosystem</a></li>
-        <li><a href="https://github.com/zenc-lang/docs">Documentation</a></li>
-        <li><a href="#standard-library">Standard Library</a></li>
-        <li><a href="#tooling">Tooling</a>
-          <ul>
-            <li><a href="#language-server-protocol-lsp">LSP</a></li>
-            <li><a href="#debugging-zen-c">Debugging</a></li>
-          </ul>
-        </li>
-        <li><a href="#compiler-support--compatibility">Compiler Support & Compatibility</a></li>
-        <li><a href="#contributing">Contributing</a></li>
-        <li><a href="#attributions">Attributions</a></li>
-      </ul>
-    </td>
-    <td valign="top">
-      <p><a href="https://docs.zenc-lang.org/tour/"><b>Browse the Language Reference</b></a></p>
-    </td>
-  </tr>
-</table>
-
----
 
 ## Quick Start
 
 ### Installation
 
-```bash
-git clone https://github.com/zenc-lang/zenc.git
-cd zenc
-make clean # remove old build files
-make
-sudo make install
-```
-
-#### Development Targets
+Use cmake to build the Release target or use the following make targets:
 
 ```bash
-make format       # Auto-format all source files with clang-format
-make format-check # Verify formatting without changing files
-make lint         # Run format-check + shellcheck on test scripts
-make bench        # Run performance benchmarks
-make WERROR=1     # Build with -Werror (warnings as errors)
+git clone https://github.com/davidscholberg/Zen-C.git
+cd Zen-C
+make gen-release
+make release
 ```
 
-### Windows
-
-Zen C has full native support for Windows (x86_64). You can build using the provided batch script with GCC (MinGW):
+On Windows, use Visual Studio to build the project, or use the following console commands (you must have cmake installed and be inside an MSVC dev console):
 
 ```cmd
-build.bat
+git clone https://github.com/davidscholberg/Zen-C.git
+cd Zen-C
+build.bat gen-release
+build.bat release
 ```
 
-This will build the compiler (`zc.exe`). Networking, Filesystem, and Process operations are fully supported via the Platform Abstraction Layer (PAL).
-
-Alternatively, you can use `make` if you have a Unix-like environment (MSYS2, Cygwin, git-bash).
-
-### Portable Build (APE)
-
-Zen C can be compiled as an **Actually Portable Executable (APE)** using [Cosmopolitan Libc](https://github.com/jart/cosmopolitan). This produces a single binary (`.com`) that runs natively on Linux, macOS, Windows, FreeBSD, OpenBSD, and NetBSD on both x86_64 and aarch64 architectures.
-
-**Prerequisites:**
-- `cosmocc` toolchain (must be in your PATH)
-
-**Build & Install:**
-```bash
-make ape
-sudo env "PATH=$PATH" make install-ape
-```
-
-**Artifacts:**
-- `out/bin/zc.com`: The portable Zen-C compiler. Includes the standard library embedded within the executable.
-- `out/bin/zc-boot.com`: A self-contained bootstrap installer for setting up new Zen-C projects.
-
-**Usage:**
-```bash
-# Run on any supported OS
-./out/bin/zc.com build hello.zc -o hello
-```
+The resulting executable will be in `build/Release/`.
 
 ### Usage
 
@@ -176,23 +49,11 @@ zc run hello.zc
 
 # Build executable
 zc build hello.zc -o hello
-
-# Interactive Shell
-zc repl
-
-# Documentation (Recursive)
-zc doc main.zc
-
-# Documentation (Single file, no check)
-zc doc --no-recursive-doc --no-check main.zc
-
-# Show Zen Facts
-zc build hello.zc --zen
 ```
 
 ### Environment Variables
 
-You can set `ZC_ROOT` to specify the location of the Standard Library (standard imports like `import "std/vec.zc"`). This allows you to run `zc` from any directory.
+You can set the `ZC_ROOT` environment variable to specify the location of the Standard Library (standard imports like `import "std/vec.zc"`). This allows you to run `zc` from any directory.
 
 ```bash
 export ZC_ROOT=/path/to/Zen-C
@@ -202,48 +63,444 @@ export ZC_ROOT=/path/to/Zen-C
 
 ## Language Reference
 
-See the official [Language Reference](https://docs.zenc-lang.org/tour/01-variables-constants/) for more details.
+### Guiding Principles
 
-## Standard Library
+The following principles are meant to guide the design of the language rather than be absolute rules that must be adhered to at all times.
 
-Zen C includes a standard library (`std`) covering essential functionality.
+* Intuitive syntax.
+* Reduce boilerplate while remaining maximally expressive.
+* No hidden memory allocations.
+* Distinct language features should not share syntax with eachother.
+    * For example, operator overloading allows operators to behave differently (either as a primitive operator or as a function call) while having identical syntax. As a rule we want to avoid this sort of shared syntax.
 
-[Browse the Standard Library Documentation](docs/std/README.md)
+### Variables and Constants
 
-### Key Modules
+#### Constants
+`#define` preprocessor macros are passed through to the generated C.
 
-<details>
-<summary>Click to see all Standard Library modules</summary>
+```zc
+#define MAX_SIZE 1024
+let buffer: char[MAX_SIZE];
+```
 
-| Module | Description | Docs |
-| :--- | :--- | :--- |
-| **`std/bigfloat.zc`** | Arbitrary-precision floating-point arithmetic. | [Docs](docs/std/bigfloat.md) |
-| **`std/bigint.zc`** | Arbitrary-precision integer `BigInt`. | [Docs](docs/std/bigint.md) |
-| **`std/bits.zc`** | Low-level bitwise operations (`rotl`, `rotr`). | [Docs](docs/std/bits.md) |
-| **`std/complex.zc`** | Complex Number Arithmetic `Complex`. | [Docs](docs/std/complex.md) |
-| **`std/vec.zc`** | Growable dynamic array `Vec<T>`. | [Docs](docs/std/vec.md) |
-| **`std/string.zc`** | Heap-allocated `String` type with UTF-8 support. | [Docs](docs/std/string.md) |
-| **`std/queue.zc`** | FIFO queue (Ring Buffer). | [Docs](docs/std/queue.md) |
-| **`std/map.zc`** | Generic Hash Map `Map<V>`. | [Docs](docs/std/map.md) |
-| **`std/fs.zc`** | File system operations. | [Docs](docs/std/fs.md) |
-| **`std/io.zc`** | Standard Input/Output (`print`/`println`). | [Docs](docs/std/io.md) |
-| **`std/option.zc`** | Optional values (`Some`/`None`). | [Docs](docs/std/option.md) |
-| **`std/result.zc`** | Error handling (`Ok`/`Err`). | [Docs](docs/std/result.md) |
-| **`std/path.zc`** | Cross-platform path manipulation. | [Docs](docs/std/path.md) |
-| **`std/env.zc`** | Process environment variables. | [Docs](docs/std/env.md) |
-| **`std/net/`** | TCP, UDP, HTTP, DNS, URL. | [Docs](docs/std/net.md) |
-| **`std/thread.zc`** | Threads and Synchronization. | [Docs](docs/std/thread.md) |
-| **`std/time.zc`** | Time measurement and sleep. | [Docs](docs/std/time.md) |
-| **`std/json.zc`** | JSON parsing and serialization. | [Docs](docs/std/json.md) |
-| **`std/stack.zc`** | LIFO Stack `Stack<T>`. | [Docs](docs/std/stack.md) |
-| **`std/set.zc`** | Generic Hash Set `Set<T>`. | [Docs](docs/std/set.md) |
-| **`std/process.zc`** | Process execution and management. | [Docs](docs/std/process.md) |
-| **`std/regex.zc`** | Regular Expressions (TRE based). | [Docs](docs/std/regex.md) |
-| **`std/simd.zc`** | Native SIMD vector types. | [Docs](docs/std/simd.md) |
+#### Variables
+Variables are named storage locations in memory. Can be mutable or read-only (`const`).
 
-</details>
+```zc
+let x: int = 10;        // Mutable
+x = 20;                 // OK
 
-### 18. Unit Testing Framework
+let y: const int = 10;  // Read-only (const qualified type)
+// y = 20;              // Error: cannot assign to const
+```
+
+### Primitive Types
+All primitive types available in `C89` (i.e. `int`, `short`, `char`, etc.) are available in Zen C. Additionally, you may use types from newer C revisions if you plan on compiling the generated C code with a later C standard.
+
+Zen C provides some convenient type aliases as well:
+
+| Type | C Equivalent | Description |
+|:---|:---|:---|
+| `uchar` | 'unsigned char` | unsigned char (Interop) |
+| `ushort` | `unsigned short` | unsigned short (Interop) |
+| `uint` | `unsigned int` | unsigned int (Interop) |
+| `ulong` | `unsigned long` | unsigned long (Interop) |
+| `ulonglong` | `unsigned long long` | unsigned long long (Interop) |
+| `i8`, `i16`, `i32`, `i64` | `int8_t`, etc. | Signed fixed-width integers (only defined on supported arches) |
+| `u8`, `u16`, `u32`, `u64` | `uint8_t`, etc. | Unsigned fixed-width integers (only defined on supported arches) |
+| `f32`, `f64`  | `float`, `double` | Fixed-width floating point numbers (only defined on supported arches) |
+| `bool` | `bool` | `true` or `false` |
+| `isize`, `usize` | `ptrdiff_t`, `size_t` | Pointer-sized integers |
+
+#### Literals
+- **Integers**: Decimal (`123`), Hex (`0xFF`), Octal (`0o755`), Binary (`0b1011`).
+  - *Note*: Numbers with leading zeros are treated as decimal (`0123` is `123`), unlike C.
+  - *Note*: Numbers can contain underscores for readability (`1_000_000`, `0b_1111_0000`).
+- **Floats**: Standard (`3.14`), Scientific (`1e-5`, `1.2E3`). Floating point numbers also support underscores (`3_14.15_92`).
+
+> [!IMPORTANT]
+> **Best Practices for Portable Code**
+>
+> - Only use fixed-width integer/float types when writing code for specific arches, otherwise stick to standard C integer/float types.
+> - Use `usize` for array indexing and pointer addition, and use `isize` for pointer subtraction.
+
+### Aggregate Types
+
+#### Arrays
+Fixed-size arrays with value semantics.
+```zc
+#define SIZE 5;
+let ints: int[SIZE] = [1, 2, 3, 4, 5];
+```
+
+#### Structs
+Data structures with optional bitfields.
+```zc
+struct Point {
+    x: int;
+    y: int;
+}
+
+// Struct initialization
+let p: Point = { x: 10, y: 20 };
+
+// Bitfields (only supported for `int`, both signed and unsigned)
+struct Flags {
+    valid: int : 1;
+    mode:  int : 3;
+}
+```
+
+> [!NOTE]
+> Fields can be accessed via `.` even on pointer to a struct object (Auto-Dereference).
+
+#### Opaque Structs
+You can define a struct as `opaque` to restrict access to its fields to the defining module only, while still allowing the struct to be allocated on the stack (size is known).
+
+```zc
+// In user.zc
+opaque struct User {
+    id: int;
+    name: string;
+}
+
+fn new_user(name: string) -> User {
+    return {id: 1, name: name}; // OK: Inside module
+}
+
+// In main.zc
+import "user.zc";
+
+fn main() {
+    let u: User = new_user("Alice");
+    // let id: int = u.id; // Error: Cannot access private field 'id'
+}
+```
+
+#### Enums
+Tagged unions (Sum types) capable of holding data.
+```zc
+struct Rect {
+    width: float;
+    height: float;
+}
+
+enum Shape {
+    Circle(float),      // Holds radius
+    Rect(Rect),         // Holds struct which contains width, height
+    Point               // No data
+}
+```
+
+#### Unions
+Standard C unions (unsafe access).
+```zc
+union Data {
+    i: int;
+    f: float;
+}
+```
+
+#### Function Pointers
+Function pointers hold addresses to callable functions and may be "called" directly.
+
+```zc
+fn add(a: int, b: int) -> int {
+    return a + b;
+}
+
+fn main() {
+    let f: fn(int, int) -> int = add;
+    println "{f(3, 2)}"; // output: 5
+}
+```
+
+#### Type Aliases
+Create a new name for an existing type.
+```zc
+alias ID = int;
+alias PointMap = Map<string, Point>
+alias OpFunc = fn(int, int) -> int
+```
+
+#### Opaque Type Aliases
+You can define a type alias as `opaque` to create a new type that is distinct from its underlying type outside of the defining module. This provides strong encapsulation and type safety without the runtime overhead of a wrapper struct.
+
+```zc
+// In library.zc
+opaque alias Handle = int;
+
+fn make_handle(v: int) -> Handle {
+    return v; // Implicit conversion allowed inside module
+}
+
+// In main.zc
+import "library.zc";
+
+fn main() {
+    let h: Handle = make_handle(42);
+    // let i: int = h; // Error: Type validation failed
+    // let h2: Handle = 10; // Error: Type validation failed
+}
+```
+
+### Functions
+
+Defines a callable function with input parameters and an output.
+
+```zc
+fn add(a: int, b: int) -> int {
+    return a + b;
+}
+
+#### Const Arguments
+Function arguments can be marked as `const` to enforce read-only semantics.
+
+```zc
+fn print_val(v: const int) {
+    // v = 10; // Error: Cannot assign to const variable
+    println "{v}";
+}
+```
+
+#### Default Arguments
+Functions can define default values for trailing arguments. These can be literals, expressions, or valid Zen C code (like struct constructors).
+```zc
+// Simple default value
+fn increment(val: int, amount: int = 1) -> int {
+    return val + amount;
+}
+
+// Expression default value (evaluated at call site)
+fn offset(val: int, pad: int = 10 * 2) -> int {
+    return val + pad;
+}
+
+// Struct default value
+struct Config { debug: bool; }
+fn init(cfg: Config = { debug: true }) {
+    if cfg.debug { println "Debug Mode"; }
+}
+
+fn main() {
+    increment(10);      // 11
+    offset(5);          // 25
+    init();             // Prints "Debug Mode"
+}
+```
+
+#### Variadic Functions
+Functions can accept a variable number of arguments using `...` and the `va_list` type.
+```zc
+fn log(lvl: int, fmt: char*, ...) {
+    let ap: va_list;
+    va_start(ap, fmt);
+    vprintf(fmt, ap); // Use C stdio
+    va_end(ap);
+}
+```
+
+### Control Flow
+
+#### Conditionals
+```zc
+if x > 10 {
+    println "Large";
+} else if x > 5 {
+    println "Medium";
+} else {
+    println "Small";
+}
+
+// Ternary
+let y = x > 10 ? 1 : 0;
+
+// If-Expression (for complex conditions)
+let category = if (x > 100) { "huge" } else if (x > 10) { "large" } else { "small" };
+```
+
+#### Pattern Matching
+Powerful alternative to `switch`.
+```zc
+match val {
+    1         => { print "One" },
+    6, 7, 8   => { print "Six to Eight" },    // OR with comma
+    10 ..< 15 => { print "10 to 14" },        // Exclusive range
+    20 ..= 25 => { print "20 to 25" },        // Inclusive range
+    _         => { print "Other" },           // Default match
+}
+
+// Destructuring Enums
+match shape {
+    Shape::Circle(r)   => { println "Radius: {r}" },
+    Shape::Rect(rect)  => { println "Area: {rect.w * rect.h}" },
+    Shape::Point       => { println "Point" },
+}
+```
+
+#### Loops
+```zc
+// Range
+for i in 0..<10 { ... }     // Exclusive (0 to 9)
+for i in 0..=10 { ... }     // Inclusive (0 to 10)
+for i in 0..<10 step 2 { ... }
+for i in 10..=0 step -1 { ... }  // Descending loop
+
+// Repeat N times
+for _ in 0..<5 { ... }
+
+// While
+while x < 10 { ... }
+
+// Do-While
+do { ... } while x < 10;
+
+// Infinite loop with label
+loop outer {
+    if done { break outer; }
+}
+```
+
+### Operators
+
+#### Standard Operators
+
+| Category | Operator |
+|:---|:---|
+| **Arithmetic** | `+`, `-`, `*`, `/`, `%`, `**` |
+| **Comparison** | `==`, `!=`, `<`, `>`, `<=`, `>=` |
+| **Bitwise** | `&`, `\|`, `^`, `<<`, `>>` |
+| **Unary** | `-`, `!`, `~` |
+
+#### Syntactic Sugar
+
+| Operator | Name | Description |
+|:---|:---|:---|
+| `??` | Null Coalescing | `val ?? default` returns `default` if `val` is NULL (pointers) |
+| `??=` | Null Assignment | `val ??= init` assigns if `val` is NULL |
+| `?` | Try Operator | `res?` returns error if present (Result/Option types) |
+
+**Auto-Dereference**:
+Pointer field access (`ptr.field`) and method calls (`ptr.method()`) automatically dereference the pointer, equivalent to `(*ptr).field`.
+
+### Printing and String Interpolation
+
+Zen C provides shorthands for printing interpolated strings to the console.
+
+| Keyword | Description |
+|:---|:---|
+| `print "..."` | Prints to `stdout` without a trailing newline. |
+| `println "..."` | Prints to `stdout` **with** a trailing newline. |
+| `eprint "..."` | Prints to `stderr` without a trailing newline. |
+| `eprintln "..."` | Prints to `stderr` **with** a trailing newline. |
+
+You can embed expressions directly into the string literals by prefixing the string literal with `f` and using `{}` syntax inside the string. Note that this interpolation method will only work with the above printing shorthands.
+
+```zc
+let x: int = 42;
+let name: char* = "Zen";
+println f"Value: {x}, Name: {name}";
+```
+
+**Escaping Braces**: Use `{{` to produce a literal `{` and `}}` for a literal `}`:
+
+```zc
+println f"JSON: {{\"key\": \"value\"}}";
+// Output: JSON: {"key": "value"}
+```
+
+To print a string with no interpolation, omit the `f` prefix:
+
+```zc
+println "JSON: {\"key\": \"value\"}"
+// Output: JSON: {"key": "value"}
+```
+
+### Resource Management
+
+In Zen C, resources (memory, file descriptors, etc) are manually managed. Zen C offers the `defer` keyword to defer the execution of resource cleanup to block exit.
+
+Defer statements are executed in LIFO (last-in, first-out) order.
+
+```zc
+let f: FILE = fopen("file.txt", "r");
+defer fclose(f);
+```
+
+> [!WARNING]
+> To prevent undefined behavior, control flow statements (`return`, `break`, `continue`, `goto`) are **not allowed** inside a `defer` block.
+
+### Object Oriented Programming
+
+#### Methods
+Define methods on types using `impl`.
+```zc
+impl Point {
+    fn dist(self) -> float {
+        return sqrt(self.x * self.x + self.y * self.y);
+    }
+}
+```
+
+#### Traits
+Define shared behavior.
+```zc
+struct Circle { radius: f32; }
+
+trait Drawable {
+    fn draw(self);
+}
+
+impl Drawable for Circle {
+    fn draw(self) { ... }
+}
+
+let circle: Circle = { radius: 1 };
+let drawable: Drawable = maketrait &circle;
+drawable.draw();
+let circle_ptr: Circle* = (Circle*)drawable.obj_ptr;
+```
+
+Note that trait objects are structs with two members: a void pointer to an object of a concrete type that implements the trait, and a pointer to the object type's vtable. The keyword `maketrait` is a special constructor for trait objects that automatically sets the correct vtable for the type of the provided object.
+
+### Generics
+
+Type-safe templates for Structs and Functions.
+
+```zc
+// Generic Struct
+struct Box<T> {
+    item: T;
+}
+
+// Generic Function
+fn identity<T>(val: T) -> T {
+    return val;
+}
+
+// Multi-parameter Generics
+struct Pair<K, V> {
+    key: K;
+    value: V;
+}
+```
+
+### C Interoperability
+
+Zen C allows you to include C headers and use symbols defined within them. Currently Zen C does not implicitly type check symbols included from a C header, but if type checking of a C symbol is desired, you can define the type of the symbol with the keyword `ffidef`.
+
+```zc
+#include <stdio.h> // Includes are emitted directly to the generated C
+
+// Define signature for type checking of C symbol.
+ffidef printf: fn(char*, ...) -> int;
+
+fn main() {
+    printf("Hello FFI: %d\n", 42); // Type checked by Zen C
+}
+```
+
+### Unit Testing Framework
 
 Zen C features a built-in testing framework with **per-test isolation**, **named output**, and **non-fatal assertions**.
 
@@ -291,431 +548,35 @@ The binary exits with the number of failed tests (0 = all passed).
 
 ---
 
-## Tooling
+## Standard Library
 
-Zen C provides a built-in Language Server and REPL to enhance the development experience. It is also debuggable with LLDB.
+Zen C includes a standard library (`std`) covering essential functionality.
 
-### Language Server (LSP)
+### Key Modules
 
-The Zen C Language Server (LSP) supports standard LSP features for editor integration, providing:
-
-*   **Go to Definition**
-*   **Find References**
-*   **Hover Information**
-*   **Completion** (Function/Struct names, Dot-completion for methods/fields)
-*   **Document Symbols** (Outline)
-*   **Signature Help**
-*   **Diagnostics** (Syntax/Semantic errors)
-
-To start the language server (typically configured in your editor's LSP settings):
-
-```bash
-zc lsp
-```
-
-It communicates via standard I/O (JSON-RPC 2.0).
-
-### REPL
-
-The Read-Eval-Print Loop allows you to experiment with Zen C code interactively using modern **In-Process JIT Compilation** (powered by LibTCC).
-
-```bash
-zc repl
-```
-
-#### Features
-
-*   **JIT Execution**: Code is compiled in-memory and executed directly within the REPL process for lightning-fast feedback.
-
-*   **Interactive Coding**: Type expressions or statements for immediate evaluation.
-*   **Persistent History**: Commands are saved to `~/.zprep_history`.
-*   **Startup Script**: Auto-loads commands from `~/.zprep_init.zc`.
-
-#### Commands
-
-| Command | Description |
-|:---|:---|
-| `:help` | Show available commands. |
-| `:reset` | Clear current session history (variables/functions). |
-| `:vars` | Show active variables. |
-| `:funcs` | Show user-defined functions. |
-| `:structs` | Show user-defined structs. |
-| `:imports` | Show active imports. |
-| `:history` | Show session input history. |
-| `:type <expr>` | Show the type of an expression. |
-| `:c <stmt>` | Show the generated C code for a statement. |
-| `:time <expr>` | Benchmark an expression (runs 1000 iterations). |
-| `:edit [n]` | Edit command `n` (default: last) in `$EDITOR`. |
-| `:save <file>` | Save the current session to a `.zc` file. |
-| `:load <file>` | Load and execute a `.zc` file into the session. |
-| `:watch <expr>` | Watch an expression (re-evaluated after every entry). |
-| `:unwatch <n>` | Remove a watch. |
-| `:undo` | Remove the last command from the session. |
-| `:delete <n>` | Remove command at index `n`. |
-| `:clear` | Clear the screen. |
-| `:quit` | Exit the REPL. |
-| `! <cmd>` | Run a shell command (e.g. `!ls`). |
+| Module | Description | Docs |
+| :--- | :--- | :--- |
+| **`std/vec.zc`** | Growable dynamic array `Vec<T>`. | [Docs](docs/std/vec.md) |
+| **`std/string.zc`** | Heap-allocated `String` type with UTF-8 support. | [Docs](docs/std/string.md) |
+| **`std/queue.zc`** | FIFO queue (Ring Buffer). | [Docs](docs/std/queue.md) |
+| **`std/map.zc`** | Generic Hash Map `Map<V>`. | [Docs](docs/std/map.md) |
+| **`std/fs.zc`** | File system operations. | [Docs](docs/std/fs.md) |
+| **`std/io.zc`** | Standard Input/Output (`print`/`println`). | [Docs](docs/std/io.md) |
+| **`std/option.zc`** | Optional values (`Some`/`None`). | [Docs](docs/std/option.md) |
+| **`std/result.zc`** | Error handling (`Ok`/`Err`). | [Docs](docs/std/result.md) |
+| **`std/path.zc`** | Cross-platform path manipulation. | [Docs](docs/std/path.md) |
+| **`std/env.zc`** | Process environment variables. | [Docs](docs/std/env.md) |
+| **`std/time.zc`** | Time measurement and sleep. | [Docs](docs/std/time.md) |
+| **`std/json.zc`** | JSON parsing and serialization. | [Docs](docs/std/json.md) |
+| **`std/stack.zc`** | LIFO Stack `Stack<T>`. | [Docs](docs/std/stack.md) |
+| **`std/set.zc`** | Generic Hash Set `Set<T>`. | [Docs](docs/std/set.md) |
+| **`std/process.zc`** | Process execution and management. | [Docs](docs/std/process.md) |
 
 ---
-
-
-### Language Server Protocol (LSP)
-
-Zen C includes a built-in Language Server for editor integration.
-
-- **[Installation & Setup Guide](docs/LSP.md)**
-- **Supported Editors**: VS Code, Neovim, Vim ([zenc.vim](https://github.com/zenc-lang/zenc.vim)), Zed, and any LSP-capable editor.
-
-Use `zc lsp` to start the server.
-
-### Debugging Zen C
-
-Zen C programs can be debugged using standard C debuggers like **LLDB** or **GDB**.
-
-#### Visual Studio Code
-
-For the best experience in VS Code, install the official [Zen C extension](https://marketplace.visualstudio.com/items?itemName=Z-libs.zenc). For debugging, you can use the **C/C++** (by Microsoft) or **CodeLLDB** extension.
-
-Add these configurations to your `.vscode` directory to enable one-click debugging:
-
-**`tasks.json`** (Build Task):
-```json
-{
-    "label": "Zen C: Build Debug",
-    "type": "shell",
-    "command": "zc",
-    "args": [ "${file}", "-g", "-o", "${fileDirname}/app", "-O0" ],
-    "group": { "kind": "build", "isDefault": true }
-}
-```
-
-**`launch.json`** (Debugger):
-```json
-{
-    "name": "Zen C: Debug (LLDB)",
-    "type": "lldb",
-    "request": "launch",
-    "program": "${fileDirname}/app",
-    "preLaunchTask": "Zen C: Build Debug"
-}
-```
 
 ## Compiler Support & Compatibility
 
-Zen C is designed to work with most C11 compilers. Some features rely on GNU C extensions, but these often work in other compilers. Use the `--cc` flag to switch backends.
-
-```bash
-zc run app.zc --cc clang
-zc run app.zc --cc zig
-```
-
-### Test Suite Status
-
-<details>
-<summary>Click to view Compiler Support details</summary>
-
-| Compiler | Pass Rate | Supported Features | Known Limitations |
-|:---|:---:|:---|:---|
-| **GCC** | **100% (Full)** | All Features | None. |
-| **Clang** | **100% (Full)** | All Features | None. |
-| **Zig** | **100% (Full)** | All Features | None. Uses `zig cc` as a drop-in C compiler. |
-| **TCC** | **98% (High)** | Structs, Generics, Traits, Pattern Matching | No Intel ASM, No `__attribute__((constructor))`. |
-
-</details>
-
-> [!WARNING]
-> **COMPILER BUILD WARNING:** While **Zig CC** works excellently as a backend for your Zen C programs, building the *Zen C compiler itself* with it may verify but produce an unstable binary that fails tests. We recommend building the compiler with **GCC** or **Clang** and using Zig only as a backend for your operational code.
-
-### MISRA C:2012 Compliance Testing
-
-The Zen C test suite includes verification against MISRA C:2012 guidelines. 
-
-> [!IMPORTANT]
-> **MISRA Disclaimer**
-> This project is completely independent and holds no affiliation, official endorsement, or corporate connection with MISRA (Motor Industry Software Reliability Association). 
-> 
-> Due to strict copyright restrictions, test cases only list directives by their numeric identifiers and avoid publishing internal specifications. Users needing primary documentation are encouraged to acquire authentic guideline materials from the [Official MISRA portal](https://www.misra.org.uk/).
-
-### Building with Zig
-
-Zig's `zig cc` command provides a drop-in replacement for GCC/Clang with excellent cross-compilation support. To use Zig:
-
-```bash
-# Compile and run a Zen C program with Zig
-zc run app.zc --cc zig
-
-# Build the Zen C compiler itself with Zig
-make zig
-```
-
-### Output Backends
-
-Zen C supports multiple output backends via the `--backend` flag. Each backend produces a different target format:
-
-| Backend | Flag | Extension | Description |
-|:---|:---|:---:|:---|
-| **C** | `--backend c` | `.c` | Default — GNU C11 |
-| **C++** | `--backend cpp` | `.cpp` | C++11 compatible (also available as `--cpp`) |
-| **CUDA** | `--backend cuda` | `.cu` | NVIDIA CUDA C++ (also available as `--cuda`) |
-| **Objective-C** | `--backend objc` | `.m` | Objective-C (also available as `--objc`) |
-| **JSON** | `--backend json` | `.json` | Machine-readable AST for tooling |
-| **AST dump** | `--backend ast-dump` | `.ast` | Human-readable AST tree (debugging) |
-| **Lisp** | `--backend lisp` | `.lisp` | Transpile to Common Lisp (`sbcl --script`) |
-| **Graphviz** | `--backend dot` | `.dot` | Visual AST graph (`dot -Tpng ast.dot -o ast.png`) |
-
-Backend-specific options can be set with `--backend-opt`:
-
-```bash
-# Pretty-print JSON output
-zc transpile file.zc --backend json --backend-opt pretty
-
-# Show full raw content (no truncation)
-zc transpile file.zc --backend lisp --backend-opt full-content
-
-# OR use convenience aliases:
-zc transpile file.zc --backend json --json-pretty
-zc transpile file.zc --backend lisp --backend-full-content
-```
-
-All backend options are self-documented — unknown `--` flags are checked against registered backend aliases automatically.
-
-### C++ Interop
-
-Zen C can generate C++-compatible code with the `--backend cpp` flag (`--cpp` for short), allowing seamless integration with C++ libraries.
-
-```bash
-# Direct compilation with g++
-zc app.zc --backend cpp
-
-# Or transpile for manual build
-zc transpile app.zc --backend cpp
-g++ out.cpp my_cpp_lib.o -o app
-```
-
-#### Using C++ in Zen C
-
-Include C++ headers and use raw blocks for C++ code:
-
-```zc
-include <vector>
-include <iostream>
-
-raw {
-    std::vector<int> make_vec(int a, int b) {
-        return {a, b};
-    }
-}
-
-fn main() {
-    let v = make_vec(1, 2);
-    raw { std::cout << "Size: " << v.size() << std::endl; }
-}
-```
-
-> [!NOTE]
-> The `--cpp` flag switches the backend to `g++` and emits C++-compatible code (uses `auto` instead of `__auto_type`, function overloads instead of `_Generic`, and explicit casts for `void*`).
-
-#### CUDA Interop
-
-Zen C supports GPU programming by transpiling to **CUDA C++** via the `--backend cuda` flag (`--cuda` for short). This allows you to leverage powerful C++ features (templates, constexpr) within your kernels while maintaining Zen C's ergonomic syntax.
-
-```bash
-# Direct compilation with nvcc
-zc run app.zc --backend cuda
-
-# Or transpile for manual build
-zc transpile app.zc --backend cuda -o app.cu
-nvcc app.cu -o app
-```
-
-#### CUDA-Specific Attributes
-
-| Attribute | CUDA Equivalent | Description |
-|:---|:---|:---|
-| `@global` | `__global__` | Kernel function (runs on GPU, called from host) |
-| `@device` | `__device__` | Device function (runs on GPU, called from GPU) |
-| `@host` | `__host__` | Host function (explicit CPU-only) |
-
-#### Kernel Launch Syntax
-
-Zen C provides a clean `launch` statement for invoking CUDA kernels:
-
-```zc
-launch kernel_name(args) with {
-    grid: num_blocks,
-    block: threads_per_block,
-    shared_mem: 1024,  // Optional
-    stream: my_stream   // Optional
-};
-```
-
-This transpiles to: `kernel_name<<<grid, block, shared, stream>>>(args);`
-
-#### Writing CUDA Kernels
-
-Use Zen C function syntax with `@global` and the `launch` statement:
-
-```zc
-import "std/cuda.zc"
-
-@global
-fn add_kernel(a: float*, b: float*, c: float*, n: int) {
-    let i = thread_id();
-    if i < n {
-        c[i] = a[i] + b[i];
-    }
-}
-
-fn main() {
-    def N = 1024;
-    let d_a = cuda_alloc<float>(N);
-    let d_b = cuda_alloc<float>(N); 
-    let d_c = cuda_alloc<float>(N);
-    defer cuda_free(d_a);
-    defer cuda_free(d_b);
-    defer cuda_free(d_c);
-
-    // ... init data ...
-    
-    launch add_kernel(d_a, d_b, d_c, N) with {
-        grid: (N + 255) / 256,
-        block: 256
-    };
-    
-    cuda_sync();
-}
-```
-
-#### Standard Library (`std/cuda.zc`)
-Zen C provides a standard library for common CUDA operations to reduce `raw` blocks:
-
-```zc
-import "std/cuda.zc"
-
-// Memory management
-let d_ptr = cuda_alloc<float>(1024);
-cuda_copy_to_device(d_ptr, h_ptr, 1024 * sizeof(float));
-defer cuda_free(d_ptr);
-
-// Synchronization
-cuda_sync();
-
-// Thread Indexing (use inside kernels)
-let i = thread_id(); // Global index
-let bid = block_id();
-let tid = local_id();
-```
-
-
-> [!NOTE]
-> **Note:** The `--cuda` flag sets `nvcc` as the compiler and implies `--cpp` mode. Requires the NVIDIA CUDA Toolkit.
-
-### C23 Support
-
-Zen C supports modern C23 features when using a compatible backend compiler (GCC 14+, Clang 14+, TCC (partial)).
-
-- **`auto`**: Zen C automatically maps type inference to standard C23 `auto` if `__STDC_VERSION__ >= 202300L`.
-- **`_BitInt(N)`**: Use `iN` and `uN` types (e.g., `i256`, `u12`, `i24`) to access C23 arbitrary-width integers.
-
-### Objective-C Interop
-
-Zen C can compile to Objective-C (`.m`) using the `--backend objc` flag (`--objc` for short), allowing you to use Objective-C frameworks (like Cocoa/Foundation) and syntax.
-
-```bash
-# Compile with clang (or gcc/gnustep)
-zc app.zc --backend objc --cc clang
-```
-
-#### Using Objective-C in Zen C
-
-Use `include` for headers and `raw` blocks for Objective-C syntax (`@interface`, `[...]`, `@""`).
-
-```zc
-//> macos: framework: Foundation
-//> linux: cflags: -fconstant-string-class=NSConstantString -D_NATIVE_OBJC_EXCEPTIONS
-//> linux: link: -lgnustep-base -lobjc
-
-include <Foundation/Foundation.h>
-
-fn main() {
-    raw {
-        NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-        NSLog(@"Hello from Objective-C!");
-        [pool drain];
-    }
-    println "Zen C works too!";
-}
-```
-
-> [!NOTE]
-> **Note:** Zen C string interpolation works with Objective-C objects (`id`) by calling `debugDescription` or `description`.
-
----
-
-### Public API (Embedding)
-
-Zen C can be used as a C library via the public headers in `src/public/*.h`. These headers compile without `-DZC_ALLOW_INTERNAL` and provide a stable API for embedding the compiler in your own tools:
-
-```c
-#include <zc_core.h>
-#include <zc_driver.h>
-#include <zc_diag.h>
-
-int main(void) {
-    ZenCompiler compiler = {0};
-    compiler.config.input_file = "source.zc";
-    return driver_run(&compiler);
-}
-```
-
-**Compile with:**
-
-```bash
-cc -I src/public -I src -I src/utils my_tool.c -o my_tool
-```
-
-**After install (`make install`):**
-
-```bash
-cc -I /usr/local/include/zenc my_tool.c -o my_tool
-```
-
-The public API covers:
-- **`zc_core.h`** — `CompilerConfig`, `ZenCompiler`, `ASTNode`, `Type` types, parser entry points, type introspection helpers
-- **`zc_driver.h`** — `driver_run()`, `driver_compile()` (full pipeline orchestration)
-- **`zc_codegen.h`** — `codegen_node()`, `emit_preamble()`, `format_expression_as_c()`
-- **`zc_analysis.h`** — `check_program()`, `check_moves_only()`, `resolve_alias()`
-- **`zc_diag.h`** — `zerror_at()`, `zwarn_at()`, `zpanic_at()`, diagnostic reporting
-- **`zc_utils.h`** — `Emitter` (output buffer), `load_file()`, `z_resolve_path()`
-
-Install with `sudo make install` to deploy headers, the binary, man pages, and standard library.
-
----
-
-## Contributing
- 
- We welcome contributions! Whether it's fixing bugs, adding documentation, or proposing new features.
- 
- Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute, run tests, and submit pull requests.
-
----
- 
- ## Security
- 
- For security reporting instructions, please see [SECURITY.md](SECURITY.md).
- 
- ---
- 
- ## Attributions
-
-This project uses third-party libraries. Full license texts can be found in the `LICENSES/` directory.
-
-*   **[cJSON](https://github.com/DaveGamble/cJSON)** (MIT License): Used for JSON parsing and generation in the Language Server.
-*   **[zc-ape](https://github.com/OEvgeny/zc-ape)** (MIT License): The original Actually Portable Executable port of Zen-C by [Eugene Olonov](https://github.com/OEvgeny).
-*   **[Cosmopolitan Libc](https://github.com/jart/cosmopolitan)** (ISC License): The foundational library that makes APE possible.
-*   **[TRE](https://github.com/laurikari/tre)** (BSD License): Used for the regular expression engine in the standard library.
-*   **[zenc.vim](https://github.com/zenc-lang/zenc.vim)** (MIT License): The official Vim/Neovim plugin, primarily authored by **[davidscholberg](https://github.com/davidscholberg)**.
-*   **[TinyCC](https://github.com/TinyCC/tinycc)** (LGPL License): The foundational JIT engine used for the high-performance REPL evaluation.
+Zen C is designed to produce C89 compatible code for maximum portability. You can of course include headers that conform to other standards and compile the generated code with whatever C standard you need.
 
 ---
 
@@ -727,9 +588,5 @@ This project uses third-party libraries. Full license texts can be found in the 
   <p>
     <a href="https://discord.com/invite/q6wEsCmkJP">Discord</a> •
     <a href="https://github.com/zenc-lang/zenc">GitHub</a> •
-    <a href="https://github.com/zenc-lang/docs">Documentation</a> •
-    <a href="https://github.com/zenc-lang/awesome-zenc">Examples</a> •
-    <a href="https://github.com/zenc-lang/rfcs">RFCs</a> •
-    <a href="CONTRIBUTING.md">Contribute</a>
   </p>
 </div>
