@@ -1,61 +1,6 @@
-# Build artifacts
-*.o
-*.so
-*.a
-*.d
-zc
-zc-fuzz
-zc-fuzz-cmplog
-zc-fuzz-libfuzzer
-zc-fuzz-harness
-zencraft_bin
-
-# Build output directories
-obj/
-
-# Generated files
-out.c
-out.cpp
-out.m
-out.cu
-
-# Test artifacts
-test_out_*
-test_def_const_*
-rule_*
-*_suite.c
-*_suite.cpp
-test_runner
-
-# Development scratch files
-main.c
-test.zc
-fib.zc
-befunge.c
-variadic_c23.c
-
-# Build logs
-make.log
-make_warning.log
-
-# Fuzzer artifacts
-crash-*
-leak-*
-timeout-*
-fuzz/corpus/
-fuzz/out/
-
-# Coverage
-*.gcda
-*.gcno
-*.gcov
-coverage.info
-coverage-report/
-
-# Benchmark artifacts
-.bench_*
-bench_*
-benchmarks_result.json
+# Build stuff
+.cache/
+build/
 
 # Editor/IDE
 .idea/
@@ -66,8 +11,3 @@ benchmarks_result.json
 # OS
 .DS_Store
 Thumbs.db
-
-# Nested repos (this is me, Zuhaitz, I like having these two close)
-docs/
-www/
-awesome-zenc/

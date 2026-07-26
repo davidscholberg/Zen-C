@@ -1,6 +1,0 @@
-Run:
-
-$ usr/bin/make
-$ out/hello.com
-
-To build and run hello world example.
